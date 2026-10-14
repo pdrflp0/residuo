@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 import type { ReportV1, RunDetail } from '@residuo/contracts';
 
-test('demo: executa, localiza o reaparecimento, exporta e compara com o modo protegido', async ({ page, request }) => {
+test('demo: executa, localiza o reaparecimento, exporta e compara com o modo protegido', async ({ page, request }, testInfo) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Rodar a demonstração' }).click();
   await expect(page).toHaveURL(/#\/runs\/run_[a-f0-9]{10}$/);
@@ -37,6 +37,20 @@ test('demo: executa, localiza o reaparecimento, exporta e compara com o modo pro
   const md = await readFile((await mdDl.path())!, 'utf8');
   expect(md).toContain('**Resultado:** VIOLATION');
   expect(md).toContain(runId);
+
+  // relatório HTML compartilhável: abre sozinho, sem servidor, e mostra a mesma evidência
+  const [htmlDl] = await Promise.all([page.waitForEvent('download'), page.getByRole('link', { name: 'Relatório HTML (compartilhável)' }).click()]);
+  const shared = await page.context().newPage();
+  const jsErrors: string[] = [];
+  shared.on('pageerror', (e) => jsErrors.push(e.message));
+  const htmlPath = testInfo.outputPath('relatorio.html');
+  await htmlDl.saveAs(htmlPath);
+  await shared.goto(`file://${htmlPath}`);
+  await expect(shared.locator('#verdict')).toContainText('Violação: o registro excluído voltou');
+  await shared.getByRole('button', { name: /^Etapa 8:/ }).click();
+  await expect(shared.locator('#evidence')).toContainText('UPSERT_INSERTED');
+  expect(jsErrors).toEqual([]);
+  await shared.close();
 
   // repetir no modo protegido e comparar
   await page.getByRole('button', { name: 'Repetir em guarded e comparar' }).click();

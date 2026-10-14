@@ -74,14 +74,16 @@ Se o alvo não oferece uma capacidade, o adapter lança `AdapterError('unsupport
 | `deletions` | registro de exclusões; no `guarded` é o marcador por (id, geração) |
 | `deliveries` | fila de entregas do cliente offline: `prepared → held → delivered` |
 | `inbox` | deduplicação do consumidor protegido |
+| `cache_entries`, `search_index` | dados derivados (nível 3); invalidados na exclusão só no modo guarded |
+| `snapshots` | backups (nível 3); o registro de exclusões fica fora deles e é reaplicado após o restore no modo guarded |
 
 **Laboratório (`residuo_lab`)**: `runs` (configuração resolvida, versões, adapter, veredito), `step_observations` (troca HTTP sanitizada + fatos, uma linha por etapa) e `violations` (consultáveis por entidade/geração).
 
 ## Endpoints
 
-API (`/api`): `GET scenarios`, `POST runs`, `GET runs`, `GET runs/:id`, `POST runs/:id/advance`, `POST runs/:id/replay`, `POST runs/:id/counterpart`, `GET runs/:id/report.json|report.md|regression.test.ts`, `DELETE runs/:id/target-data`, `GET comparisons?base&candidate`, `GET about`.
+API (`/api`): `GET scenarios`, `POST runs`, `GET runs`, `GET runs/:id`, `POST runs/:id/advance`, `POST runs/:id/replay`, `POST runs/:id/counterpart`, `GET runs/:id/report.json|report.md|report.html|regression.test.ts`, `DELETE runs/:id/target-data`, `GET comparisons?base&candidate`, `GET about`.
 
-Serviço de referência: `POST/GET/DELETE namespaces[/:ns]`, `POST ns/:ns/items`, `GET|DELETE ns/:ns/items/:id`, `POST ns/:ns/items/:id/restore`, `GET ns/:ns/deletions/:id`, `POST ns/:ns/client/updates`, `POST ns/:ns/deliveries/:id/hold|release|redeliver`.
+Serviço de referência: `POST/GET/DELETE namespaces[/:ns]`, `POST ns/:ns/items`, `GET|DELETE ns/:ns/items/:id`, `POST ns/:ns/items/:id/restore`, `GET ns/:ns/deletions/:id`, `POST ns/:ns/client/updates`, `POST ns/:ns/deliveries/:id/hold|release|redeliver`, `GET ns/:ns/cache/items/:id`, `GET ns/:ns/search/items/:id`, `POST ns/:ns/snapshots`, `POST ns/:ns/snapshots/:id/restore`.
 
 ## Segurança do ambiente de teste
 

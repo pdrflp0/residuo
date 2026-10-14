@@ -183,6 +183,41 @@ describe('evaluate — evidência insuficiente nunca passa', () => {
   });
 });
 
+describe('evaluate — pontos de leitura derivados (nível 3)', () => {
+  it('cache que ainda mostra a geração excluída é VIOLATION por "dado derivado não invalidado", sem culpar uma escrita', () => {
+    const t = new Trace().create().deleteG().confirm().absent().visible(1, 'create:op_1', 'cache');
+    const v = evaluate({ policy: 'delete-wins', steps: t.steps });
+    expect(v.result).toBe('VIOLATION');
+    expect(v.violations[0]).toMatchObject({ attribution: 'stale-derived', observationPoint: 'cache' });
+    expect(v.violations[0]!.causedBySeq).toBeUndefined();
+  });
+
+  it('cada ponto em que o dado sobreviveu vira uma violação separada', () => {
+    const t = new Trace().create().deleteG().confirm().absent().visible(1, undefined, 'cache').visible(1, undefined, 'search');
+    const v = evaluate({ policy: 'delete-wins', steps: t.steps });
+    expect(v.violations.map((x) => x.observationPoint)).toEqual(['cache', 'search']);
+    expect(v.summary).toMatch(/índice de busca/);
+  });
+
+  it('pontos derivados ausentes após a confirmação: nenhuma violação', () => {
+    const t = new Trace().create().deleteG().confirm().absent().absentAt('cache').absentAt('search');
+    expect(evaluate({ policy: 'delete-wins', steps: t.steps }).result).toBe('NO_VIOLATION_OBSERVED');
+  });
+
+  it('restauração de backup não é "restauração autorizada": continua sendo violação mesmo em explicit-restore', () => {
+    const t = new Trace()
+      .create()
+      .deleteG()
+      .confirm()
+      .absent()
+      .add('restore-snapshot', { writeOutcome: 'SNAPSHOT_RESTORED', wrote: true, opRef: 'snapshot-restore:snp_1', reappliedDeletions: 0 })
+      .visible(1, 'snapshot-restore:snp_1');
+    const v = evaluate({ policy: 'explicit-restore', steps: t.steps });
+    expect(v.result).toBe('VIOLATION');
+    expect(v.violations[0]).toMatchObject({ attribution: 'provenance', causedBySeq: 5 });
+  });
+});
+
 describe('evaluate — determinismo', () => {
   it('a mesma fixture, inclusive após ida e volta em JSON (relatório exportado), produz o mesmo veredito', () => {
     const t = new Trace().create().deleteG().confirm().absent().release('UPSERT_INSERTED', true).visible(1, 'delivery:dlv_1');

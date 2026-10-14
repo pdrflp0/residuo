@@ -101,6 +101,27 @@ export class ItemsController {
     return this.store.deleteItem(parse(NamespaceId, ns), parse(ItemId, id), parse(z.coerce.number().int().positive(), generation));
   }
 
+  @Get('cache/items/:id')
+  cached(@Param('ns') ns: string, @Param('id') id: string) {
+    return this.store.getCachedItem(parse(NamespaceId, ns), parse(ItemId, id));
+  }
+
+  @Get('search/items/:id')
+  searched(@Param('ns') ns: string, @Param('id') id: string) {
+    return this.store.getSearchItem(parse(NamespaceId, ns), parse(ItemId, id));
+  }
+
+  @Post('snapshots')
+  snapshot(@Param('ns') ns: string) {
+    return this.store.takeSnapshot(parse(NamespaceId, ns));
+  }
+
+  @Post('snapshots/:snapshotId/restore')
+  @HttpCode(200)
+  restoreSnapshot(@Param('ns') ns: string, @Param('snapshotId') snapshotId: string) {
+    return this.store.restoreSnapshot(parse(NamespaceId, ns), parse(OpaqueId, snapshotId));
+  }
+
   @Get('deletions/:deletionId')
   async deletion(@Param('ns') rawNs: string, @Param('deletionId') deletionId: string) {
     const ns = parse(NamespaceId, rawNs);

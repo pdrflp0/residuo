@@ -22,6 +22,8 @@ interface Props {
 export function Timeline({ scenario, steps, verdict, revealed, selectedSeq, onSelect, nextStepId, diffStepIds, label }: Props) {
   const refs = useRef(new Map<number, HTMLButtonElement>());
   const cols = scenario.steps.length;
+  // só as faixas que o cenário usa (a de operação aparece apenas nos cenários de backup)
+  const lanes = LANES.filter((l) => scenario.steps.some((st) => st.lane === l.id));
   const confirmSeq = verdict?.confirmationSeq ?? steps.find((s) => s.kind === 'confirm-deletion' && s.facts.confirmed)?.seq;
   const showWatched = confirmSeq !== undefined && revealed >= confirmSeq && confirmSeq < cols;
   const visibleSeqs = steps.filter((s) => s.seq <= revealed).map((s) => s.seq);
@@ -60,7 +62,7 @@ export function Timeline({ scenario, steps, verdict, revealed, selectedSeq, onSe
           );
         })}
 
-        {LANES.map((lane, li) => {
+        {lanes.map((lane, li) => {
           const Icon = lane.icon;
           return [
             <div key={`l-${lane.id}`} className="tl-lane" style={{ gridRow: li + 2 }}>
@@ -77,16 +79,16 @@ export function Timeline({ scenario, steps, verdict, revealed, selectedSeq, onSe
           ];
         })}
 
-        <div className="tl-footer-row" style={{ gridRow: LANES.length + 2, gridColumn: 1 }} aria-hidden="true" />
+        <div className="tl-footer-row" style={{ gridRow: lanes.length + 2, gridColumn: 1 }} aria-hidden="true" />
         {showWatched && (
-          <div className="tl-watched" style={{ gridRow: `2 / ${LANES.length + 3}`, gridColumn: `${confirmSeq + 2} / ${cols + 2}` }} aria-hidden="true">
+          <div className="tl-watched" style={{ gridRow: `2 / ${lanes.length + 3}`, gridColumn: `${confirmSeq + 2} / ${cols + 2}` }} aria-hidden="true">
             <span className="tl-watched-label">zona vigiada · leituras após a exclusão confirmada</span>
           </div>
         )}
 
         {scenario.steps.map((def, i) => {
           const seq = i + 1;
-          const row = LANES.findIndex((l) => l.id === def.lane) + 2;
+          const row = lanes.findIndex((l) => l.id === def.lane) + 2;
           const obs = steps.find((s) => s.seq === seq);
           const shown = obs && seq <= revealed;
           const style = { gridColumn: seq + 1, gridRow: row };
@@ -96,7 +98,7 @@ export function Timeline({ scenario, steps, verdict, revealed, selectedSeq, onSe
             return (
               <div key={def.id} className="tl-cell" style={style}>
                 <div className={`node is-pending ${isNext ? 'is-next' : ''}`} aria-label={`Etapa ${seq}: ${def.title} (${isNext ? 'próxima' : 'pendente'})`}>
-                  <span className="node-lane">{LANES[row - 2]!.name} · </span>
+                  <span className="node-lane">{lanes[row - 2]!.name} · </span>
                   <span className="node-title">{def.title}</span>
                   <span className="node-code">{isNext ? 'próxima' : 'aguardando'}</span>
                 </div>
@@ -124,7 +126,7 @@ export function Timeline({ scenario, steps, verdict, revealed, selectedSeq, onSe
                 <span className="node-top">
                   <ToneIcon tone={n.tone} size={14} />
                   <span className="node-title">
-                    <span className="node-lane">{LANES[row - 2]!.name} · </span>
+                    <span className="node-lane">{lanes[row - 2]!.name} · </span>
                     {def.title}
                   </span>
                 </span>

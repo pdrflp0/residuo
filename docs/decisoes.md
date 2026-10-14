@@ -71,6 +71,22 @@ Não. A interface reproduz as observações já gravadas e só deriva estado del
 - **Zod** valida a entrada nas bordas HTTP. Erros de validação devolvem 400 com os campos.
 - **Sem roteador e sem gerenciador de estado no front**: rota por hash e polling simples enquanto a execução não termina.
 
+## 10. Por que vigiar vários pontos de leitura? (nível 3)
+
+"Sumiu do banco" não é o mesmo que "sumiu para o usuário". Cache e índice de busca guardam cópias, e uma exclusão que não as invalida deixa o dado visível. Por isso a inspeção ganhou um **ponto de leitura** (`primary`, `cache`, `search`), e cada ponto em que o dado sobreviveu vira uma violação separada.
+
+Nesses casos não existe uma escrita culpada: o problema é a **falta** de invalidação. Em vez de forçar uma atribuição, o avaliador usa `stale-derived` ("dado derivado não invalidado") quando o alvo não informa procedência. A correção no modo protegido apaga cache e índice **na mesma transação** da exclusão ([store.ts](../apps/reference-service/src/store.ts)).
+
+## 11. Por que reaplicar exclusões depois de um restore? (nível 3)
+
+Um backup é uma foto do passado; restaurá-lo traz de volta o que foi apagado depois da foto. A correção mantém o registro de exclusões **fora** do backup e o reaplica logo após o restore, dentro da mesma transação. O relatório mostra quantas exclusões foram reaplicadas.
+
+Restaurar um backup **não** conta como "restauração autorizada", mesmo na política `explicit-restore`: autorização vale por registro, com ator e motivo.
+
+## 12. Por que o relatório HTML não carrega nada de fora? (nível 3)
+
+Ele é feito para circular: issue, PR, e-mail. Por isso é um arquivo único, sem scripts, fontes ou estilos externos (funciona offline e não vaza nada para terceiros). Como as evidências trazem respostas de sistemas de terceiros, os dados vão embutidos como JSON escapado e todo texto é inserido com `textContent`: uma resposta maliciosa não consegue injetar HTML. Há um teste específico para isso.
+
 ## Como explicar em 30 segundos
 
 > "Fiz um laboratório que reproduz um bug clássico de sistemas offline e orientados a eventos: um registro excluído volta porque uma atualização antiga chega depois e o consumidor faz upsert. O engine executa a sequência contra um serviço real, com barreiras explícitas em vez de sleeps, e decide o resultado só a partir de leituras feitas depois da exclusão confirmada. Separei id de geração para não confundir uma recriação legítima com ressurreição. No modo protegido uso inbox, lock por identidade e marcador de exclusão por geração. A interface mostra a linha do tempo, a evidência HTTP de cada etapa e a comparação entre os dois modos, e exporta um relatório com um teste de regressão."

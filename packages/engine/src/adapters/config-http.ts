@@ -46,15 +46,21 @@ export class ConfigHttpAdapter implements TargetAdapter {
     if (ops.redeliver) caps.push('redeliver');
     if (ops.confirmDeletion) caps.push('confirm-deletion');
     if (ops.restore) caps.push('restore-entity');
+    if (ops.snapshot && ops.restoreSnapshot) caps.push('snapshot-restore');
+    if (Object.keys(ops.inspectPoints).length) caps.push('inspect-derived');
     if (ops.inspect.facts.lastWrittenBy) caps.push('write-provenance');
     if (this.config.isolation.header || this.config.isolation.setup) caps.push('namespace-isolation');
     return {
       name: `residuo.json:${this.config.name}`,
       version: `${this.config.version} (adapter ${CONFIG_ADAPTER_VERSION})`,
       capabilities: caps,
+      points: ['primary', ...Object.keys(ops.inspectPoints)],
       observationPoints: this.config.observationPoints.length
         ? this.config.observationPoints
-        : [`Leitura pelo alvo: ${ops.inspect.method} ${ops.inspect.path}`],
+        : [
+            `primary: ${ops.inspect.method} ${ops.inspect.path}`,
+            ...Object.entries(ops.inspectPoints).map(([name, op]) => `${name}: ${op.method} ${op.path}`),
+          ],
       limits: [
         'Observa somente o que a operação "inspect" do residuo.json devolve; réplicas, caches e backups ficam de fora.',
         ...(caps.includes('namespace-isolation') ? [] : ['Sem isolamento declarado: execuções podem interferir umas nas outras.']),
@@ -170,8 +176,30 @@ export class ConfigHttpAdapter implements TargetAdapter {
     });
   }
 
-  async inspectEntity(ns: string, id: string, opts: CallOptions): Promise<AdapterResult> {
-    const op = this.config.operations.inspect;
+  async takeSnapshot(ns: string, opts: CallOptions): Promise<AdapterResult> {
+    const op = this.config.operations.snapshot;
+    const o = await this.run('snapshot', op, ns, {}, opts);
+    const snapshotId = asString(this.fact(op!, 'snapshotId', o));
+    if (!snapshotId) throw new AdapterError('failed', 'snapshot: a resposta não trouxe o fato "snapshotId" configurado', o.exchange);
+    return this.result(o, { writeOutcome: 'SNAPSHOT_TAKEN', wrote: false, snapshotId });
+  }
+
+  async restoreSnapshot(ns: string, snapshotId: string, opts: CallOptions): Promise<AdapterResult> {
+    const op = this.config.operations.restoreSnapshot;
+    const o = await this.run('restoreSnapshot', op, ns, { snapshotId }, opts);
+    const reapplied = this.fact(op!, 'reappliedDeletions', o);
+    return this.result(o, {
+      snapshotId,
+      writeOutcome: asString(this.fact(op!, 'writeOutcome', o)) ?? (o.accepted ? 'SNAPSHOT_RESTORED' : `REJECTED (HTTP ${o.status})`),
+      wrote: this.bool(op!, 'wrote', o) ?? o.accepted,
+      ...str('opRef', this.fact(op!, 'opRef', o)),
+      ...(Array.isArray(reapplied) ? { reappliedDeletions: reapplied.length } : num('reappliedDeletions', reapplied)),
+    });
+  }
+
+  async inspectEntity(ns: string, id: string, opts: CallOptions, point = 'primary'): Promise<AdapterResult> {
+    const op = point === 'primary' ? this.config.operations.inspect : this.config.operations.inspectPoints[point];
+    if (!op) throw new AdapterError('unsupported', `o ponto de leitura "${point}" não está configurado em operations.inspectPoints`);
     const ex = await this.http(op, ns, { entityId: id }, opts);
     const status = ex.response?.status ?? 0;
     const body = ex.response?.body;
@@ -191,7 +219,7 @@ export class ConfigHttpAdapter implements TargetAdapter {
     if (status === absent.status && (absent.path === undefined || lookup(body, absent.path) === absent.equals)) {
       return { exchange: ex, facts: { entityId: id, visible: false } };
     }
-    throw new AdapterError('failed', `inspect: resposta HTTP ${status} não é "visível" nem a ausência declarada`, ex);
+    throw new AdapterError('failed', `inspect (${point}): resposta HTTP ${status} não é "visível" nem a ausência declarada`, ex);
   }
 
   // ---------- internos ----------

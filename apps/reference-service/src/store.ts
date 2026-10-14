@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import type { Fault, Mode } from '@residuo/contracts';
 import type pg from 'pg';
-import { type ConsumerResult, consumeGuarded, consumeVulnerable, type Delivery, type ItemView } from './consumers';
+import { type ConsumerResult, consumeGuarded, consumeVulnerable, type Delivery, indexItem, type ItemView } from './consumers';
 import { inTransaction, type Tx } from './db';
 
 export const PG_POOL = Symbol('PG_POOL');
@@ -84,6 +84,7 @@ export class TargetStore implements OnModuleDestroy {
          VALUES ($1, $2, $3, 1, $4, $5) RETURNING id, generation, revision, data, last_written_by, updated_at`,
         [ns, id, gen.rows[0].last_generation, data, `create:${shortId('op')}`],
       );
+      await indexItem(tx, ns, id, rows[0].generation, rows[0].revision, data, rows[0].last_written_by);
       return { outcome: 'CREATED', item: itemView(rows[0]) };
     });
   }
@@ -108,6 +109,11 @@ export class TargetStore implements OnModuleDestroy {
         throw new ConflictException({ outcome: 'GENERATION_MISMATCH', currentGeneration: row.generation, requestedGeneration: generation });
       }
       await tx.query(`DELETE FROM items WHERE ns = $1 AND id = $2`, [ns, id]);
+      if (space.mode === 'guarded') {
+        // invalidação na mesma transação: nenhum ponto derivado sobrevive à exclusão confirmada
+        await tx.query(`DELETE FROM cache_entries WHERE ns = $1 AND id = $2`, [ns, id]);
+        await tx.query(`DELETE FROM search_index WHERE ns = $1 AND id = $2`, [ns, id]);
+      }
       const deletionId = shortId('del');
       const mechanism = space.mode === 'guarded' ? 'tombstone' : 'row-removed';
       await tx.query(
@@ -163,12 +169,96 @@ export class TargetStore implements OnModuleDestroy {
          VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, generation, revision, data, last_written_by, updated_at`,
         [ns, id, d.generation, d.revision + 1, d.snapshot, `restore:${restoreId}`],
       );
+      await indexItem(tx, ns, id, rows[0].generation, rows[0].revision, d.snapshot, rows[0].last_written_by);
       await tx.query(
         `UPDATE deletions SET restored_at = now(), restore_id = $3, restored_by = $4, restore_reason = $5
           WHERE ns = $1 AND deletion_id = $2`,
         [ns, deletionId, restoreId, authorization.actor, authorization.reason],
       );
       return { outcome: 'RESTORED', restoreId, authorization: { actor: authorization.actor, reason: authorization.reason }, item: itemView(rows[0]) };
+    });
+  }
+
+  // ---------- dados derivados (nível 3) ----------
+
+  /** Leitura com cache: devolve a cópia em cache se houver; senão lê a fonte e guarda no cache. */
+  async getCachedItem(ns: string, id: string) {
+    await this.getNamespace(ns);
+    const hit = await this.pool.query(`SELECT payload, cached_at FROM cache_entries WHERE ns = $1 AND id = $2`, [ns, id]);
+    if (hit.rows[0]) return { source: 'cache', cachedAt: hit.rows[0].cached_at, item: hit.rows[0].payload };
+    const { item } = await this.getItem(ns, id);
+    await this.pool.query(`INSERT INTO cache_entries (ns, id, payload) VALUES ($1, $2, $3) ON CONFLICT (ns, id) DO UPDATE SET payload = EXCLUDED.payload, cached_at = now()`, [
+      ns,
+      id,
+      item,
+    ]);
+    return { source: 'primary', item };
+  }
+
+  async getSearchItem(ns: string, id: string) {
+    await this.getNamespace(ns);
+    const { rows } = await this.pool.query(`SELECT * FROM search_index WHERE ns = $1 AND id = $2`, [ns, id]);
+    if (!rows[0]) throw new NotFoundException({ outcome: 'NOT_FOUND', id });
+    const r = rows[0];
+    return { item: { id: r.id, generation: r.generation, revision: r.revision, title: r.title, lastWrittenBy: r.last_written_by } };
+  }
+
+  // ---------- backup (nível 3) ----------
+
+  async takeSnapshot(ns: string) {
+    await this.getNamespace(ns);
+    const snapshotId = shortId('snp');
+    const { rows } = await this.pool.query(
+      `INSERT INTO snapshots (ns, snapshot_id, rows)
+       SELECT $1, $2, COALESCE(jsonb_agg(jsonb_build_object('id', id, 'generation', generation, 'revision', revision, 'data', data)), '[]'::jsonb)
+         FROM items WHERE ns = $1
+       RETURNING jsonb_array_length(rows) AS count`,
+      [ns, snapshotId],
+    );
+    return { outcome: 'SNAPSHOT_TAKEN', snapshotId, items: rows[0].count };
+  }
+
+  /**
+   * Restaura um backup: o estado volta a ser o do momento do backup.
+   * vulnerable: só isso — o que foi apagado depois do backup volta.
+   * guarded: depois de restaurar, reaplica o registro de exclusões (que fica fora do backup).
+   */
+  async restoreSnapshot(ns: string, snapshotId: string) {
+    const space = await this.getNamespace(ns);
+    return inTransaction(this.pool, async (tx) => {
+      const snap = await tx.query(`SELECT rows FROM snapshots WHERE ns = $1 AND snapshot_id = $2`, [ns, snapshotId]);
+      if (!snap.rows[0]) throw new NotFoundException({ outcome: 'SNAPSHOT_NOT_FOUND', snapshotId });
+      const opRef = `snapshot-restore:${snapshotId}`;
+      await tx.query(`SELECT 1 FROM identities WHERE ns = $1 FOR UPDATE`, [ns]);
+      await tx.query(`DELETE FROM items WHERE ns = $1`, [ns]);
+      await tx.query(`DELETE FROM cache_entries WHERE ns = $1`, [ns]);
+      const restored: { id: string; generation: number }[] = snap.rows[0].rows;
+      for (const r of snap.rows[0].rows as { id: string; generation: number; revision: number; data: Record<string, unknown> }[]) {
+        await tx.query(`INSERT INTO items (ns, id, generation, revision, data, last_written_by) VALUES ($1, $2, $3, $4, $5, $6)`, [
+          ns,
+          r.id,
+          r.generation,
+          r.revision,
+          r.data,
+          opRef,
+        ]);
+        await indexItem(tx, ns, r.id, r.generation, r.revision, r.data, opRef);
+      }
+      const reapplied: { id: string; generation: number; deletionId: string }[] = [];
+      if (space.mode === 'guarded') {
+        for (const r of restored) {
+          const del = await tx.query(
+            `SELECT deletion_id FROM deletions WHERE ns = $1 AND id = $2 AND generation = $3 AND restored_at IS NULL ORDER BY effective_at DESC LIMIT 1`,
+            [ns, r.id, r.generation],
+          );
+          if (del.rows[0]) {
+            await tx.query(`DELETE FROM items WHERE ns = $1 AND id = $2`, [ns, r.id]);
+            await tx.query(`DELETE FROM search_index WHERE ns = $1 AND id = $2`, [ns, r.id]);
+            reapplied.push({ id: r.id, generation: r.generation, deletionId: del.rows[0].deletion_id });
+          }
+        }
+      }
+      return { outcome: 'SNAPSHOT_RESTORED', snapshotId, opRef, restored: restored.length, reappliedDeletions: reapplied };
     });
   }
 

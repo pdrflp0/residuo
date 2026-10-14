@@ -9,6 +9,10 @@ export interface StepParams {
   delivery?: string;
   /** etapa de exclusão a confirmar ou restaurar */
   deletion?: string;
+  /** etapa de backup a restaurar */
+  snapshot?: string;
+  /** ponto de leitura de uma etapa inspect (padrão "primary") */
+  point?: string;
 }
 
 export interface ScenarioStep extends ScenarioStepSummary {
@@ -101,6 +105,44 @@ export const SCENARIOS: readonly Scenario[] = [
       step('inspect-deleted', 'inspect', 'observer', 'Ler após exclusão', 'O Resíduo verifica que o registro sumiu.'),
       step('restore', 'restore', 'api', 'Restaurar com autorização', 'Um operador restaura o registro e registra o motivo.', { deletion: 'delete' }),
       step('inspect-after', 'inspect', 'observer', 'Ler estado final', 'O Resíduo lê o registro: ele voltou, e com que autorização?'),
+    ],
+  },
+  {
+    id: 'backup-restore-after-delete',
+    version: '1.0.0',
+    title: 'Backup antigo restaurado depois da exclusão',
+    summary:
+      'Um backup é feito com o registro vivo. Depois o registro é excluído e a exclusão confirmada. Quando o backup é restaurado, o registro apagado volta junto?',
+    defaultPolicy: 'delete-wins',
+    story: ['Um backup foi feito.', 'O registro foi apagado e a exclusão confirmada.', 'Alguém restaurou o backup.', 'O registro apagado voltou junto?'],
+    steps: [
+      step('create', 'create', 'api', 'Criar registro', 'A API cria a ficha.'),
+      step('snapshot', 'snapshot', 'ops', 'Fazer backup', 'A operação tira um backup com o registro ainda vivo.'),
+      step('inspect-before', 'inspect', 'observer', 'Ler estado inicial', 'O Resíduo lê o registro para ter uma linha de base.'),
+      step('delete', 'delete', 'api', 'Excluir registro', 'Um cliente pede a exclusão.'),
+      step('confirm', 'confirm-deletion', 'api', 'Confirmar exclusão', 'O serviço confirma que a exclusão está em vigor.', { deletion: 'delete' }),
+      step('inspect-deleted', 'inspect', 'observer', 'Ler após exclusão', 'O Resíduo verifica que o registro sumiu.'),
+      step('restore-snapshot', 'restore-snapshot', 'ops', 'Restaurar o backup', 'A operação restaura o backup antigo (por exemplo, depois de um incidente).', { snapshot: 'snapshot' }),
+      step('inspect-after', 'inspect', 'observer', 'Ler estado final', 'O Resíduo lê o registro: o backup trouxe o apagado de volta?'),
+    ],
+  },
+  {
+    id: 'derived-data-after-delete',
+    version: '1.0.0',
+    title: 'Cache e índice de busca depois da exclusão',
+    summary:
+      'O registro é lido pelo cache e aparece na busca. Depois da exclusão confirmada, ele some do banco, mas continua no cache ou no índice?',
+    defaultPolicy: 'delete-wins',
+    story: ['O registro foi lido pelo cache e indexado na busca.', 'Foi apagado e a exclusão confirmada.', 'O banco não o mostra mais.', 'E o cache e a busca?'],
+    steps: [
+      step('create', 'create', 'api', 'Criar registro', 'A API cria a ficha e a indexa na busca.'),
+      step('warm-cache', 'inspect', 'observer', 'Ler pelo cache', 'Uma leitura passa pelo cache e o aquece.', { point: 'cache' }),
+      step('search-before', 'inspect', 'observer', 'Buscar no índice', 'A ficha aparece no índice de busca.', { point: 'search' }),
+      step('delete', 'delete', 'api', 'Excluir registro', 'Um cliente pede a exclusão.'),
+      step('confirm', 'confirm-deletion', 'api', 'Confirmar exclusão', 'O serviço confirma que a exclusão está em vigor.', { deletion: 'delete' }),
+      step('inspect-primary', 'inspect', 'observer', 'Ler no banco', 'O Resíduo lê a fonte de verdade.'),
+      step('inspect-cache', 'inspect', 'observer', 'Ler pelo cache de novo', 'O Resíduo lê pelo cache: ele foi invalidado?', { point: 'cache' }),
+      step('inspect-search', 'inspect', 'observer', 'Buscar no índice de novo', 'O Resíduo consulta a busca: a ficha saiu do índice?', { point: 'search' }),
     ],
   },
 ];

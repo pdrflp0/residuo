@@ -13,6 +13,8 @@ const LANE: Record<StepKind, Lane> = {
   delete: 'api',
   'confirm-deletion': 'api',
   restore: 'api',
+  snapshot: 'ops',
+  'restore-snapshot': 'ops',
   inspect: 'observer',
 };
 
@@ -51,13 +53,17 @@ export class Trace {
   absent() {
     return this.add('inspect', { entityId: 'item-17', visible: false });
   }
-  visible(generation: number, lastWrittenBy?: string) {
+  visible(generation: number, lastWrittenBy?: string, point?: string) {
     return this.add('inspect', {
       entityId: 'item-17',
       visible: true,
       observedGeneration: generation,
       observedRevision: 2,
       ...(lastWrittenBy ? { lastWrittenBy } : {}),
+      ...(point ? { observationPoint: point } : {}),
     });
+  }
+  absentAt(point: string) {
+    return this.add('inspect', { entityId: 'item-17', visible: false, observationPoint: point });
   }
 }

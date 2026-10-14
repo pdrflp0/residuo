@@ -7,7 +7,7 @@
  * que dependem dela ficam "unsupported" e o resultado vira INCONCLUSIVE, nunca aprovação.
  *
  * Variáveis disponíveis nos modelos {{...}}: namespace, entityId, generation, revision,
- * baseRevision, deliveryId, deletionId, data (e data.campo), actor, reason, além de `vars`
+ * baseRevision, deliveryId, deletionId, snapshotId, data (e data.campo), actor, reason, além de `vars`
  * do arquivo e das passadas na linha de comando (--var chave=valor).
  */
 import { z } from 'zod';
@@ -41,7 +41,7 @@ export const Operation = HttpCall.extend({
   ok: z.array(z.number().int()).default([200, 201]),
   /** Códigos que significam "o alvo recusou explicitamente" (resposta válida, nada escrito). */
   rejected: z.array(z.number().int()).default([]),
-  /** Fato → regra. Nomes conhecidos: generation, revision, opRef, writeOutcome, wrote, deliveryId, deletionId, confirmed, confirmationStatus, mechanism. */
+  /** Fato → regra. Nomes conhecidos: generation, revision, opRef, writeOutcome, wrote, deliveryId, deletionId, confirmed, confirmationStatus, mechanism, snapshotId, reappliedDeletions, actor, reason. */
   facts: z.record(z.string(), FactRule).default({}),
 });
 export type Operation = z.infer<typeof Operation>;
@@ -74,7 +74,13 @@ export const TargetConfig = z.object({
     delete: Operation,
     confirmDeletion: Operation.optional(),
     restore: Operation.optional(),
+    /** Backup do estado atual. Fato esperado: snapshotId. */
+    snapshot: Operation.optional(),
+    /** Restaurar um backup ({{snapshotId}}). Fatos úteis: opRef, reappliedDeletions. */
+    restoreSnapshot: Operation.optional(),
     inspect: InspectOperation,
+    /** Pontos de leitura derivados (cache, índice de busca, réplica…), pelo nome. */
+    inspectPoints: z.record(z.string(), InspectOperation).default({}),
   }),
   observationPoints: z.array(z.string()).default([]),
   limits: z.array(z.string()).default([]),

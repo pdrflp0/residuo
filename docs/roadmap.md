@@ -1,6 +1,6 @@
 # Roadmap
 
-Os níveis 1 e 2 estão implementados e verificados (ver README, seção Testes). O nível 3 **não foi iniciado**.
+Os níveis 1, 2 e 3 (parte escolhida) estão implementados e verificados (ver README, seção Testes).
 
 ## Nível 2 — usar no projeto de outro desenvolvedor (implementado)
 
@@ -14,7 +14,16 @@ Os níveis 1 e 2 estão implementados e verificados (ver README, seção Testes)
 - [ ] Interface web para alvos externos (hoje: CLI)
 - [ ] Integrar com um sistema real de outra pessoa e medir o esforço
 
-## Nível 3 — recuperação e colaboração
+## Nível 3 — recuperação e colaboração (parte implementada)
+
+- [x] Restauração de backup: cenário `backup-restore-after-delete`; correção que reaplica o registro de exclusões
+- [x] Dados derivados: cenário `derived-data-after-delete`; vários pontos de leitura e atribuição "dado derivado não invalidado"
+- [x] Relatório HTML compartilhável (arquivo único, sem recursos externos)
+- [ ] Mais clientes concorrentes na exploração de ordens
+- [ ] Resumo de execução com IA, citando as etapas usadas como evidência
+- [ ] Pilotos com outros desenvolvedores e coleta de feedback
+
+### Ideias originais do nível 3
 
 - Restauração de snapshot controlado, dados derivados/cache, mais de dois clientes. Cada capacidade exige um adapter específico.
 - Compartilhar evidências sanitizadas e recolher feedback de pilotos.

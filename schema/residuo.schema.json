@@ -799,6 +799,176 @@
             "path"
           ]
         },
+        "snapshot": {
+          "type": "object",
+          "properties": {
+            "method": {
+              "type": "string",
+              "enum": [
+                "GET",
+                "POST",
+                "PUT",
+                "PATCH",
+                "DELETE"
+              ]
+            },
+            "path": {
+              "type": "string",
+              "format": "starts_with",
+              "pattern": "^\\/.*"
+            },
+            "body": {},
+            "headers": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "ok": {
+              "default": [
+                200,
+                201
+              ],
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "rejected": {
+              "default": [],
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "facts": {
+              "default": {},
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "path": {
+                        "type": "string"
+                      },
+                      "equals": {},
+                      "in": {
+                        "type": "array",
+                        "items": {}
+                      }
+                    },
+                    "required": [
+                      "path"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "required": [
+            "method",
+            "path"
+          ]
+        },
+        "restoreSnapshot": {
+          "type": "object",
+          "properties": {
+            "method": {
+              "type": "string",
+              "enum": [
+                "GET",
+                "POST",
+                "PUT",
+                "PATCH",
+                "DELETE"
+              ]
+            },
+            "path": {
+              "type": "string",
+              "format": "starts_with",
+              "pattern": "^\\/.*"
+            },
+            "body": {},
+            "headers": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "ok": {
+              "default": [
+                200,
+                201
+              ],
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "rejected": {
+              "default": [],
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "facts": {
+              "default": {},
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "path": {
+                        "type": "string"
+                      },
+                      "equals": {},
+                      "in": {
+                        "type": "array",
+                        "items": {}
+                      }
+                    },
+                    "required": [
+                      "path"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "required": [
+            "method",
+            "path"
+          ]
+        },
         "inspect": {
           "type": "object",
           "properties": {
@@ -939,6 +1109,154 @@
             "absent",
             "facts"
           ]
+        },
+        "inspectPoints": {
+          "default": {},
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "method": {
+                "type": "string",
+                "enum": [
+                  "GET",
+                  "POST",
+                  "PUT",
+                  "PATCH",
+                  "DELETE"
+                ]
+              },
+              "path": {
+                "type": "string",
+                "format": "starts_with",
+                "pattern": "^\\/.*"
+              },
+              "body": {},
+              "headers": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "visible": {
+                "default": [
+                  200
+                ],
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                }
+              },
+              "absent": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "equals": {}
+                },
+                "required": [
+                  "status"
+                ]
+              },
+              "facts": {
+                "type": "object",
+                "properties": {
+                  "generation": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "equals": {},
+                          "in": {
+                            "type": "array",
+                            "items": {}
+                          }
+                        },
+                        "required": [
+                          "path"
+                        ]
+                      }
+                    ]
+                  },
+                  "revision": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "equals": {},
+                          "in": {
+                            "type": "array",
+                            "items": {}
+                          }
+                        },
+                        "required": [
+                          "path"
+                        ]
+                      }
+                    ]
+                  },
+                  "lastWrittenBy": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "equals": {},
+                          "in": {
+                            "type": "array",
+                            "items": {}
+                          }
+                        },
+                        "required": [
+                          "path"
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "generation"
+                ]
+              }
+            },
+            "required": [
+              "method",
+              "path",
+              "absent",
+              "facts"
+            ]
+          }
         }
       },
       "required": [

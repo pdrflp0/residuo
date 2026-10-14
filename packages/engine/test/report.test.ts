@@ -4,6 +4,7 @@ import { compareRuns } from '../src/compare';
 import { evaluate } from '../src/evaluate';
 import { describeStep } from '../src/narrative';
 import { buildReport, renderMarkdown } from '../src/report';
+import { renderHtml } from '../src/report-html';
 import { sanitize } from '../src/sanitize';
 import { getScenario, summarizeScenario } from '../src/scenarios';
 import { Trace } from './fixtures';
@@ -19,7 +20,7 @@ function detail(mode: 'vulnerable' | 'guarded', trace: Trace, id = `run_${mode}`
       scenarioId: scenario.id,
       scenarioVersion: scenario.version,
       engineVersion: '0.1.0',
-      adapter: { name: 'fixture', version: '0', capabilities: [], observationPoints: [], limits: ['limite do adapter'] },
+      adapter: { name: 'fixture', version: '0', capabilities: [], points: ['primary'], observationPoints: [], limits: ['limite do adapter'] },
       config: { scenarioId: scenario.id, scenarioVersion: scenario.version, mode, policy: 'delete-wins', seed: 1200, fault: 'none', stepMode: 'auto', timeoutMs: 3000 },
       namespace: `rsd-${id}`,
       entityId: 'item-17',
@@ -101,5 +102,23 @@ describe('narrativa', () => {
     const v = vulnerable();
     const violation = evaluate({ policy: 'delete-wins', steps: v.steps });
     expect(describeStep(v.steps[4]!, violation).tone).toBe('reappeared');
+  });
+});
+
+describe('relatório HTML compartilhável', () => {
+  it('é um arquivo único, sem recursos externos, com o veredito e as etapas', () => {
+    const html = renderHtml(buildReport(detail('vulnerable', vulnerable())));
+    expect(html).toMatch(/^<!doctype html>/);
+    expect(html).not.toMatch(/<script[^>]+src=|<link[^>]+href=|@import|url\(http/i);
+    expect(html).toContain('"result":"VIOLATION"');
+    expect(html).toContain('"title":"Atualização retida chega depois da exclusão"');
+  });
+
+  it('dados de terceiros não conseguem fechar o <script> nem injetar HTML', () => {
+    const d = detail('vulnerable', vulnerable());
+    d.steps[0]!.exchange = { request: { method: 'GET', path: '/x' }, response: { status: 200, body: { evil: '</script><img src=x onerror=alert(1)>' } }, durationMs: 1 };
+    const html = renderHtml(buildReport(d));
+    expect(html).not.toContain('</script><img');
+    expect(html).toContain('\\u003c/script>');
   });
 });

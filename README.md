@@ -6,7 +6,7 @@
 
 O Resíduo executa uma sequência controlada contra um serviço de teste real — criar um registro, guardar uma edição antiga, excluir, confirmar a exclusão e só então liberar a edição — e mostra, com evidência, se o registro voltou, em qual operação e se isso viola a política declarada. O resultado é um caso de bug reproduzível, com relatório exportável e um teste de regressão para acompanhar a correção.
 
-> Níveis 1 e 2 · dados sintéticos de demonstração · testa o serviço de referência ou o seu próprio sistema via `residuo.json` · ainda não validado com usuários externos.
+> Níveis 1, 2 e 3 · dados sintéticos de demonstração · testa o serviço de referência ou o seu próprio sistema via `residuo.json` · ainda não validado com usuários externos.
 >
 > **Primeira vez aqui?** Leia [Entenda o Resíduo em 5 minutos](docs/entenda.md): o bug explicado com um exemplo do dia a dia e um glossário.
 
@@ -60,6 +60,19 @@ docker compose --profile full up --build   # http://localhost:4000
 
 **Sem Docker:** use qualquer PostgreSQL ≥ 14 (por exemplo `brew install postgresql@18`) e aponte as variáveis de [.env.example](.env.example) (`TARGET_DATABASE_URL`, `LAB_DATABASE_URL`). Os serviços criam os próprios bancos na primeira execução.
 
+## Outros jeitos de um registro voltar (nível 3)
+
+Além da edição atrasada, o Resíduo reproduz dois caminhos comuns de "ressurreição":
+
+| Cenário | O que acontece no modo vulnerável | Correção no modo protegido |
+| --- | --- | --- |
+| `backup-restore-after-delete` | Um backup antigo é restaurado e traz de volta o que foi apagado depois dele | Reaplica o registro de exclusões logo após o restore |
+| `derived-data-after-delete` | O registro some do banco, mas continua no cache e no índice de busca | Invalida cache e índice na mesma transação da exclusão |
+
+Para o segundo caso, o Resíduo vigia **vários pontos de leitura** (banco, cache, índice) e diz em qual o dado sobreviveu. Quando nenhuma escrita explica o reaparecimento, a causa é classificada como **"dado derivado não invalidado"**, em vez de culpar a operação errada.
+
+Cada execução também pode ser exportada como **relatório HTML de arquivo único**: linha do tempo clicável, evidência HTTP e veredito, sem nenhum recurso externo. Dá para anexar numa issue ou num PR e mostrar o bug a quem não tem o Resíduo instalado. Ele é gerado pela interface ou por `residuo run --report <pasta>`.
+
 ## Testar o seu próprio sistema (nível 2)
 
 Descreva o seu sistema num `residuo.json`: como criar, editar, apagar e ler, e onde ficam os ganchos de teste que seguram e soltam uma entrega. Depois rode a CLI, local ou no CI:
@@ -99,6 +112,8 @@ npm run typecheck
 | Um sistema com outro formato de API (notes-sync) é testado só por configuração; capacidade ausente vira INCONCLUSIVE | idem |
 | `explore` acha as ordens que violam e reduz à mesma sequência mínima, independente da semente | idem |
 | CLI como processo real: códigos de saída, `--json`, relatórios, configuração inválida, recusa de alvo remoto, schema sincronizado | [cli.integration.test.ts](tests/level2/cli.integration.test.ts) |
+| Backup restaurado e cache/índice: vulnerável viola com a causa certa; protegido reaplica exclusões e invalida derivados | [scenarios.integration.test.ts](apps/reference-service/test/scenarios.integration.test.ts) |
+| Relatório HTML: sem recursos externos, imune a injeção pelos dados do alvo, abre e navega no navegador | [report.test.ts](packages/engine/test/report.test.ts) + [e2e/demo.spec.ts](e2e/demo.spec.ts) |
 | Ponta a ponta: demo → evidência → causa → exportação idêntica à API → comparação | [e2e/demo.spec.ts](e2e/demo.spec.ts) |
 | Navegação por teclado e preferência por movimento reduzido | idem |
 
@@ -148,6 +163,7 @@ O avaliador e o alvo ficam em bancos separados: tudo o que o Resíduo sabe do al
 - A interface web testa só o serviço de referência. Sistemas de terceiros são testados pela CLI, que por padrão recusa alvos fora de `localhost` (`--allow-remote` existe para ambientes de teste autorizados).
 - Integrar exige trabalho do lado do sistema testado: mapear operações e oferecer ganchos de teste para segurar e soltar entregas. Não é automático.
 - `explore` cobre 12 ordens de um conjunto pequeno de ações, e não todas as concorrências possíveis.
+- Os pontos de leitura vigiados são os declarados (banco, cache, índice). Réplicas, logs e armazenamento físico ficam de fora.
 - A política "abrir conflito para revisão humana" não está implementada: no modo `guarded`, a edição conflitante é rejeitada com resultado explícito.
 - Não é certificação de privacidade, conformidade legal nem exclusão criptograficamente comprovada.
 - Ainda não foi usado por desenvolvedores além do autor; utilidade e esforço de integração não estão validados.
@@ -169,5 +185,7 @@ The reference service has two modes: `vulnerable` (an upsert consumer resurrects
 Stack: TypeScript, NestJS 12, React 19 + Vite, PostgreSQL 18, Vitest, Playwright. Runs are isolated by namespace; ordering is enforced by explicit barriers (each adapter call returns only after the target finished), not sleeps. Reports export as JSON and Markdown, including a suggested regression test.
 
 Level 2 lets anyone test their own system: describe it in a `residuo.json` (operations, fact extraction, test hooks to hold/release deliveries) and run the `residuo` CLI (`check`, `run`, `explore`) locally or in CI, with exit codes 0/1/2. `explore` runs 12 delivery orders and shrinks a failure to the minimal reproducing sequence. A generic-adapter parity test proves the config-driven adapter matches the hand-written one.
+
+Level 3 adds two more resurrection paths — an old backup being restored (fixed by re-applying the deletion log after restore) and stale derived data in a cache or search index (multiple observation points; a `stale-derived` attribution instead of blaming a write) — plus a self-contained, injection-safe HTML report you can attach to an issue.
 
 Run it: `npm install && npm run db:up && npm run dev`, then open http://localhost:5173. Limits: it measures visibility through the target's read API only, replays one controlled interleaving (not real-time races), and targets only the local reference service in v1.

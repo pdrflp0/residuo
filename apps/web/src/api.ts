@@ -55,7 +55,7 @@ export const counterpartRun = (id: string, mode: Mode) => api<Run>(`/runs/${id}/
 export const getComparison = (base: string, candidate: string) =>
   api<{ comparison: RunComparison; base: RunDetail; candidate: RunDetail }>(`/comparisons?base=${base}&candidate=${candidate}`);
 
-export const reportUrl = (id: string, kind: 'json' | 'md') => `/api/runs/${id}/report.${kind}`;
+export const reportUrl = (id: string, kind: 'json' | 'md' | 'html') => `/api/runs/${id}/report.${kind}`;
 export const regressionUrl = (id: string) => `/api/runs/${id}/regression.test.ts`;
 
 export const isFinished = (run: Run) => run.status === 'completed' || run.status === 'interrupted';

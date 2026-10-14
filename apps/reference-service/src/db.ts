@@ -89,6 +89,34 @@ CREATE TABLE IF NOT EXISTS deliveries (
   PRIMARY KEY (ns, delivery_id)
 );
 
+-- Dados derivados (nível 3). O cache guarda a última leitura; o índice de busca, um resumo do registro.
+-- No modo guarded, a exclusão invalida os dois na mesma transação; no vulnerable, eles ficam para trás.
+CREATE TABLE IF NOT EXISTS cache_entries (
+  ns         text NOT NULL REFERENCES namespaces(ns) ON DELETE CASCADE,
+  id         text NOT NULL,
+  payload    jsonb NOT NULL,
+  cached_at  timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (ns, id)
+);
+CREATE TABLE IF NOT EXISTS search_index (
+  ns               text NOT NULL REFERENCES namespaces(ns) ON DELETE CASCADE,
+  id               text NOT NULL,
+  generation       int  NOT NULL,
+  revision         int  NOT NULL,
+  title            text,
+  last_written_by  text NOT NULL,
+  PRIMARY KEY (ns, id)
+);
+
+-- Backups (nível 3): cópia das linhas de items no momento do backup.
+CREATE TABLE IF NOT EXISTS snapshots (
+  ns           text NOT NULL REFERENCES namespaces(ns) ON DELETE CASCADE,
+  snapshot_id  text NOT NULL,
+  rows         jsonb NOT NULL,
+  taken_at     timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (ns, snapshot_id)
+);
+
 -- Inbox do consumidor protegido: deduplicação por id de entrega.
 CREATE TABLE IF NOT EXISTS inbox (
   ns            text NOT NULL REFERENCES namespaces(ns) ON DELETE CASCADE,

@@ -15,6 +15,11 @@ Imagine um app de notas que funciona offline.
 
 O mesmo acontece com filas de mensagens que entregam uma mensagem duas vezes, com jobs atrasados e com réplicas de banco desatualizadas. Quando o dado é pessoal, "apaguei e voltou" também é um problema de privacidade.
 
+### Outros dois caminhos para o dado voltar
+
+- **Backup restaurado.** Você apaga a nota hoje. Amanhã a empresa restaura o backup de ontem, depois de um incidente qualquer. A nota volta junto, porque estava no backup.
+- **Cache e busca.** A nota some do banco, mas a tela ainda a mostra, porque estava em cache. Ou ela continua aparecendo na busca, porque o índice não foi atualizado.
+
 ## 2. O que o Resíduo faz
 
 O Resíduo é um **laboratório**: ele provoca essa situação de propósito, numa ordem controlada, e **prova com evidência** o que aconteceu.
@@ -60,6 +65,10 @@ Rodar o mesmo cenário nos dois modos e comparar é a demonstração principal.
 | **Escrita × leitura** | Escrita é o que o servidor **diz** que fez. Leitura é o que o Resíduo **vê** depois. O veredito usa as leituras. |
 | **Namespace** | Uma "caixinha" isolada para cada execução, para que testes diferentes não se misturem. |
 | **Semente** | Um número que gera sempre os mesmos dados de teste. A semente `1200` gera o registro `item-17`. |
+| **Backup / restore** | Cópia do estado num momento; restaurar volta tudo para aquele momento, inclusive o que foi apagado depois. |
+| **Cache** | Cópia rápida de uma leitura anterior. Se não for invalidada na exclusão, continua mostrando o dado apagado. |
+| **Índice de busca** | Resumo dos registros usado pela busca. Também precisa ser limpo quando algo é apagado. |
+| **Ponto de leitura** | Onde o Resíduo lê para verificar: banco (fonte de verdade), cache, índice. |
 | **Barreira** | O ponto em que o Resíduo espera uma etapa terminar antes de começar a próxima. É o que torna a ordem reproduzível, sem depender de "esperar um tempinho". |
 
 ## 5. Como ler a tela

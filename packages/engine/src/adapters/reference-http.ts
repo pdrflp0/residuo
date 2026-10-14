@@ -43,10 +43,17 @@ export class ReferenceHttpAdapter implements TargetAdapter {
         'inspect-entity',
         'write-provenance',
         'namespace-isolation',
+        'snapshot-restore',
+        'inspect-derived',
       ],
-      observationPoints: ['Leitura do registro pela API pública do alvo: GET /ns/{ns}/items/{id}'],
+      points: ['primary', 'cache', 'search'],
+      observationPoints: [
+        'primary: GET /ns/{ns}/items/{id} (fonte de verdade)',
+        'cache: GET /ns/{ns}/cache/items/{id} (leitura com cache)',
+        'search: GET /ns/{ns}/search/items/{id} (índice de busca)',
+      ],
       limits: [
-        'Observa somente a visibilidade pela API de leitura do alvo; não inspeciona réplicas, caches, backups, logs ou armazenamento físico.',
+        'Observa somente os pontos de leitura declarados (banco, cache e índice de busca do serviço de referência); não inspeciona réplicas, logs ou armazenamento físico.',
         'Aceita apenas o serviço de referência local configurado no servidor; não testa URLs arbitrárias.',
       ],
     };
@@ -158,8 +165,29 @@ export class ReferenceHttpAdapter implements TargetAdapter {
     });
   }
 
-  async inspectEntity(ns: string, id: string, opts: CallOptions): Promise<AdapterResult> {
-    const ex = await this.call('GET', `/ns/${enc(ns)}/items/${enc(id)}`, undefined, opts);
+  async takeSnapshot(ns: string, opts: CallOptions): Promise<AdapterResult> {
+    const ex = await this.call('POST', `/ns/${enc(ns)}/snapshots`, undefined, opts);
+    const body = this.expect(ex, [201], 'fazer backup');
+    return result(ex, { writeOutcome: 'SNAPSHOT_TAKEN', wrote: false, snapshotId: String(body.snapshotId) });
+  }
+
+  async restoreSnapshot(ns: string, snapshotId: string, opts: CallOptions): Promise<AdapterResult> {
+    const ex = await this.call('POST', `/ns/${enc(ns)}/snapshots/${enc(snapshotId)}/restore`, undefined, opts);
+    const body = this.expect(ex, [200], 'restaurar backup');
+    return result(ex, {
+      writeOutcome: String(body.outcome),
+      wrote: true,
+      snapshotId,
+      opRef: String(body.opRef),
+      reappliedDeletions: Array.isArray(body.reappliedDeletions) ? body.reappliedDeletions.length : 0,
+    });
+  }
+
+  async inspectEntity(ns: string, id: string, opts: CallOptions, point = 'primary'): Promise<AdapterResult> {
+    const path =
+      point === 'primary' ? `/ns/${enc(ns)}/items/${enc(id)}` : point === 'cache' ? `/ns/${enc(ns)}/cache/items/${enc(id)}` : point === 'search' ? `/ns/${enc(ns)}/search/items/${enc(id)}` : undefined;
+    if (!path) throw new AdapterError('unsupported', `ponto de leitura desconhecido: ${point}`);
+    const ex = await this.call('GET', path, undefined, opts);
     const body = this.expect(ex, [200, 404], 'ler registro');
     if (ex.response!.status === 404) {
       // Só "registro não encontrado" conta como ausência. Namespace sumido ou rota errada é falha, não evidência.

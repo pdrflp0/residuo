@@ -36,7 +36,7 @@ export const STEP_MODES = ['auto', 'manual'] as const;
 export const StepMode = z.enum(STEP_MODES);
 export type StepMode = z.infer<typeof StepMode>;
 
-export const LANES = ['api', 'client', 'consumer', 'observer'] as const;
+export const LANES = ['api', 'client', 'consumer', 'ops', 'observer'] as const;
 export type Lane = (typeof LANES)[number];
 
 export const STEP_KINDS = [
@@ -48,8 +48,14 @@ export const STEP_KINDS = [
   'delete',
   'confirm-deletion',
   'restore',
+  'snapshot',
+  'restore-snapshot',
   'inspect',
 ] as const;
+
+/** Ponto de leitura vigiado. "primary" é a fonte de verdade; os demais são dados derivados. */
+export const OBSERVATION_POINTS = ['primary', 'cache', 'search'] as const;
+export type ObservationPoint = string;
 export type StepKind = (typeof STEP_KINDS)[number];
 
 export const VERDICTS = ['VIOLATION', 'NO_VIOLATION_OBSERVED', 'INCONCLUSIVE', 'POLICY_ALLOWED'] as const;
@@ -91,6 +97,12 @@ export interface StepFacts {
   observedGeneration?: number;
   observedRevision?: number;
   lastWrittenBy?: string;
+  /** ponto de leitura usado (ausente = primary) */
+  observationPoint?: string;
+  // backup
+  snapshotId?: string;
+  /** quantas exclusões o alvo reaplicou depois de restaurar um backup */
+  reappliedDeletions?: number;
 }
 
 export interface StepObservation {
@@ -114,7 +126,10 @@ export interface Violation {
   observedAtSeq: number;
   /** Etapa de escrita associada ao reaparecimento, quando há evidência. */
   causedBySeq?: number;
-  attribution: 'provenance' | 'ordering' | 'unknown';
+  /** stale-derived: nenhuma escrita explica; o dado sobreviveu num ponto derivado (cache, índice) não invalidado */
+  attribution: 'provenance' | 'ordering' | 'stale-derived' | 'unknown';
+  /** ponto de leitura em que o reaparecimento foi visto */
+  observationPoint?: string;
   explanation: string;
   evidenceSeqs: number[];
 }
@@ -134,6 +149,7 @@ export interface CheckedPoint {
   visible: boolean;
   observedGeneration?: number;
   afterConfirmation: boolean;
+  observationPoint?: string;
 }
 
 export interface Verdict {
@@ -193,6 +209,8 @@ export interface AdapterDescriptor {
   name: string;
   version: string;
   capabilities: AdapterCapability[];
+  /** nomes dos pontos de leitura suportados (ex.: primary, cache, search) */
+  points: string[];
   observationPoints: string[];
   limits: string[];
 }
@@ -208,6 +226,8 @@ export const ADAPTER_CAPABILITIES = [
   'inspect-entity',
   'write-provenance',
   'namespace-isolation',
+  'snapshot-restore',
+  'inspect-derived',
 ] as const;
 export type AdapterCapability = (typeof ADAPTER_CAPABILITIES)[number];
 

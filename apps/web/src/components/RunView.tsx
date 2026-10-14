@@ -207,10 +207,13 @@ export function RunView({ id, motion }: { id: string; motion: boolean }) {
         <div className="section-head">
           <div>
             <h2>Exportar evidência</h2>
-            <div className="muted small">Relatório reproduzível com configuração, linha do tempo, evidências e limites.</div>
+            <div className="muted small">Relatório reproduzível com configuração, linha do tempo, evidências e limites. O HTML abre em qualquer navegador, sem instalar nada.</div>
           </div>
         </div>
         <div className="btn-row">
+          <a className="btn btn-primary" href={reportUrl(run.id, 'html')} download aria-disabled={!finished}>
+            <Download size={15} aria-hidden="true" /> Relatório HTML (compartilhável)
+          </a>
           <a className="btn" href={reportUrl(run.id, 'md')} download aria-disabled={!finished}>
             <Download size={15} aria-hidden="true" /> Relatório Markdown
           </a>

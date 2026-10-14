@@ -24,6 +24,9 @@ export interface EvaluateInput {
   expectsDeletion?: boolean;
 }
 
+const POINT_NAME: Record<string, string> = { cache: 'cache', search: 'índice de busca' };
+const pointName = (p: string) => POINT_NAME[p] ?? p;
+
 const statusText: Record<string, string> = {
   failed: 'falhou',
   timeout: 'excedeu o tempo limite',
@@ -98,6 +101,7 @@ export function evaluate({ policy, steps, expectsDeletion = true }: EvaluateInpu
       visible: s.facts.visible === true,
       ...(s.facts.observedGeneration !== undefined ? { observedGeneration: s.facts.observedGeneration } : {}),
       afterConfirmation: confirmStep !== undefined && s.seq > confirmStep.seq,
+      ...(s.facts.observationPoint && s.facts.observationPoint !== 'primary' ? { observationPoint: s.facts.observationPoint } : {}),
     }));
 
   if (confirmStep && deletedGeneration !== undefined && deleteStep) {
@@ -112,6 +116,7 @@ export function evaluate({ policy, steps, expectsDeletion = true }: EvaluateInpu
     for (const point of after) {
       if (!point.visible) continue;
       const obs = steps.find((s) => s.seq === point.seq)!;
+      const where = obs.facts.observationPoint ?? 'primary';
       const gen = point.observedGeneration;
 
       if (gen === undefined) {
@@ -147,15 +152,18 @@ export function evaluate({ policy, steps, expectsDeletion = true }: EvaluateInpu
           continue;
         }
 
-        const existing = violations.find((v) => v.generation === gen);
+        // uma violação por (geração, ponto de leitura): o relatório mostra cada lugar em que o dado sobreviveu
+        const existing = violations.find((v) => v.generation === gen && (v.observationPoint ?? 'primary') === where);
         if (existing) {
           existing.evidenceSeqs.push(point.seq);
           continue;
         }
-        const cause = attributeCause(steps, point.seq, obs.facts.lastWrittenBy, confirmStep.seq, checkedPoints);
+        const cause = attributeCause(steps, point.seq, obs.facts.lastWrittenBy, confirmStep.seq, checkedPoints, where);
         const causeText = cause.step
           ? ` ${cause.attribution === 'provenance' ? 'O alvo informa que a última escrita veio de' : 'A única escrita entre as leituras foi'} "${cause.step.title}" (etapa ${cause.step.seq}, resultado ${cause.step.facts.writeOutcome ?? '?'}).`
-          : ' Não há evidência suficiente para associar o reaparecimento a uma operação específica.';
+          : cause.attribution === 'stale-derived'
+            ? ` Nenhuma escrita depois da exclusão explica isso: o dado sobreviveu no ponto de leitura "${pointName(where)}", que não foi invalidado.`
+            : ' Não há evidência suficiente para associar o reaparecimento a uma operação específica.';
         const policyText =
           restore && policy === 'delete-wins'
             ? ` Houve uma restauração autorizada (etapa ${restore.seq}), mas a política declarada "delete-wins" não permite restauração.`
@@ -167,7 +175,8 @@ export function evaluate({ policy, steps, expectsDeletion = true }: EvaluateInpu
           observedAtSeq: point.seq,
           ...(cause.step ? { causedBySeq: cause.step.seq } : {}),
           attribution: cause.attribution,
-          explanation: `A geração g${gen} de ${entityId}, excluída e confirmada na etapa ${confirmStep.seq}, voltou a ficar visível na etapa ${point.seq}.${causeText}${policyText}`,
+          ...(where !== 'primary' ? { observationPoint: where } : {}),
+          explanation: `A geração g${gen} de ${entityId}, excluída e confirmada na etapa ${confirmStep.seq}, voltou a ficar visível na etapa ${point.seq}${where !== 'primary' ? ` (ponto de leitura: ${pointName(where)})` : ''}.${causeText}${policyText}`,
           evidenceSeqs: [deleteStep.seq, confirmStep.seq, ...(cause.step ? [cause.step.seq] : []), point.seq],
         });
         continue;
@@ -230,6 +239,7 @@ function attributeCause(
   lastWrittenBy: string | undefined,
   confirmSeq: number,
   points: CheckedPoint[],
+  where: string,
 ): { step?: StepObservation; attribution: Violation['attribution'] } {
   // Só escritas confirmadas pelo alvo e posteriores à confirmação podem explicar um reaparecimento.
   if (lastWrittenBy) {
@@ -238,6 +248,8 @@ function attributeCause(
       .find((s) => s.seq < observedSeq && s.seq > confirmSeq && s.status === 'ok' && s.facts.wrote === true && s.facts.opRef === lastWrittenBy);
     if (best) return { step: best, attribution: 'provenance' };
   }
+  // Em ponto derivado (cache, índice), sem procedência não se culpa uma escrita: o problema é a falta de invalidação.
+  if (where !== 'primary') return { attribution: 'stale-derived' };
   const previousPoint = [...points].reverse().find((p) => p.seq < observedSeq);
   const from = Math.max(confirmSeq, previousPoint?.seq ?? 0);
   const writes = steps.filter((s) => s.seq > from && s.seq < observedSeq && s.status === 'ok' && s.facts.wrote === true);
@@ -254,7 +266,15 @@ function summarize(
 ): string {
   switch (result) {
     case 'VIOLATION':
-      return violations[0]!.explanation;
+      return (
+        violations[0]!.explanation +
+        (violations.length > 1
+          ? ` Também reapareceu em: ${violations
+              .slice(1)
+              .map((v) => `${pointName(v.observationPoint ?? 'banco')} (etapa ${v.observedAtSeq})`)
+              .join(', ')}.`
+          : '')
+      );
     case 'POLICY_ALLOWED':
       return allowances.map((a) => a.explanation).join(' ');
     case 'INCONCLUSIVE':

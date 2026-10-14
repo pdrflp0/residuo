@@ -55,6 +55,8 @@ As capacidades de teste costumam virar rotas que só existem em ambiente de test
 - **`ok` × `rejected`**: `ok` quer dizer "aceitou e escreveu"; `rejected` quer dizer "recusou explicitamente". Qualquer outro código é falha, e o resultado vira INCONCLUSIVE.
 - **`absent`** precisa identificar o "não existe" do seu sistema. Use também um campo do corpo: assim um 404 de rota errada ou de tenant inexistente não é confundido com "registro apagado".
 - **`hold: "implicit"`**: use quando o que foi preparado só é entregue no `release`.
+- **`snapshot` e `restoreSnapshot`** (opcionais) habilitam o cenário de backup. `snapshot` precisa devolver o fato `snapshotId`; em `restoreSnapshot`, os fatos `opRef` e `reappliedDeletions` deixam o relatório mais preciso.
+- **`inspectPoints`** (opcional) declara pontos de leitura derivados pelo nome, por exemplo `"cache"` e `"search"`, com o mesmo formato de `inspect`. O cenário `derived-data-after-delete` exige `cache` e `search`; o `check` aponta o que falta.
 - Operação ausente = capacidade ausente. O `check` mostra quais cenários ficam de fora.
 
 O schema completo, para autocomplete no editor, está em [schema/residuo.schema.json](../schema/residuo.schema.json).

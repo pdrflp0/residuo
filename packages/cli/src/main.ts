@@ -18,8 +18,9 @@ import {
   executeScenario,
   exploreOrders,
   getScenario,
-  missingCapabilities,
+  missingRequirements,
   ReferenceHttpAdapter,
+  renderHtml,
   renderMarkdown,
   requiredCapabilities,
   SCENARIOS,
@@ -44,7 +45,7 @@ Opções:
   --policy <p>            delete-wins | explicit-restore (padrão: o do cenário)
   --timeout <ms>          tempo limite por chamada (padrão 3000)
   --budget <n>            explore: máximo de ordens a executar
-  --report <pasta>        grava relatório Markdown e JSON de cada execução
+  --report <pasta>        grava relatório Markdown, JSON e HTML (compartilhável) de cada execução
   --json                  saída para máquinas (CI)
   --keep                  não limpa os dados de teste no alvo ao final
   --allow-remote          permite alvo fora de localhost (só em ambientes que você está autorizado a testar)
@@ -148,7 +149,7 @@ function guardHost(url: string) {
 }
 
 function pickScenarios(adapter: TargetAdapter): { run: Scenario[]; skipped: { scenario: Scenario; missing: string[] }[] } {
-  const caps = adapter.describe().capabilities;
+  const descriptor = adapter.describe();
   if (opt.scenario && opt.scenario !== 'all') {
     const s = getScenario(opt.scenario);
     if (!s) throw new CliError(`cenário desconhecido: ${opt.scenario}. Disponíveis: ${SCENARIOS.map((x) => x.id).join(', ')}`);
@@ -157,7 +158,7 @@ function pickScenarios(adapter: TargetAdapter): { run: Scenario[]; skipped: { sc
   const run: Scenario[] = [];
   const skipped: { scenario: Scenario; missing: string[] }[] = [];
   for (const s of SCENARIOS) {
-    const missing = missingCapabilities(s, caps);
+    const missing = missingRequirements(s, descriptor);
     if (missing.length) skipped.push({ scenario: s, missing });
     else run.push(s);
   }
@@ -217,6 +218,7 @@ async function cmdRun(): Promise<number> {
       await mkdir(dir, { recursive: true });
       await writeFile(join(dir, `${scenario.id}.json`), JSON.stringify(report, null, 2));
       await writeFile(join(dir, `${scenario.id}.md`), renderMarkdown(report));
+      await writeFile(join(dir, `${scenario.id}.html`), renderHtml(report));
     }
     results.push({ scenario: scenario.id, version: scenario.version, policy, namespace, entityId, verdict });
   }
@@ -307,13 +309,14 @@ async function cmdCheck(): Promise<number> {
   const config = await readConfig(opt.config);
   const adapter = new ConfigHttpAdapter(config);
   const d = adapter.describe();
-  const rows = SCENARIOS.map((s) => ({ id: s.id, missing: missingCapabilities(s, d.capabilities) }));
+  const rows = SCENARIOS.map((s) => ({ id: s.id, missing: missingRequirements(s, d) }));
   if (opt.json) {
     console.log(JSON.stringify({ schema: 'residuo.cli.check/v1', target: config.name, capabilities: d.capabilities, scenarios: rows }, null, 2));
     return 0;
   }
   out(`${opt.config}: válido (${config.name} v${config.version}, ${config.baseUrl})`);
   out(`capacidades: ${d.capabilities.join(', ')}`);
+  out(`pontos de leitura: ${d.points.join(', ')}`);
   for (const r of rows) out(`  ${r.missing.length ? '✗' : '✓'} ${r.id}${r.missing.length ? ` — falta: ${r.missing.join(', ')}` : ''}`);
   return 0;
 }

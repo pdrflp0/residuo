@@ -12,7 +12,7 @@ interface Props {
   compact?: boolean;
 }
 
-const WRITE_KINDS = new Set(['create', 'release', 'replay', 'delete', 'restore']);
+const WRITE_KINDS = new Set(['create', 'release', 'replay', 'delete', 'restore', 'restore-snapshot']);
 
 export function Evidence({ step, scenario, verdict, onJump, heading, compact }: Props) {
   if (!step) {
@@ -95,7 +95,8 @@ export function Evidence({ step, scenario, verdict, onJump, heading, compact }: 
         <div className="source-note">
           {step.kind === 'inspect' ? (
             <>
-              <Eye size={14} aria-hidden="true" /> Leitura independente feita pelo Resíduo: esta é a evidência usada no veredito.
+              <Eye size={14} aria-hidden="true" /> Leitura independente feita pelo Resíduo
+              {step.facts.observationPoint ? ` (ponto de leitura: ${step.facts.observationPoint})` : ''}: esta é a evidência usada no veredito.
             </>
           ) : WRITE_KINDS.has(step.kind) ? (
             <>

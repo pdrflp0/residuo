@@ -48,7 +48,11 @@ describe('residuo (CLI)', () => {
     const r = await cli('run', '--config', configPath, '--var', 'strategy=tombstone', '--json');
     expect(r.code).toBe(0);
     const out = JSON.parse(r.stdout);
-    expect(out.skipped).toEqual([{ scenario: 'authorized-restore', missing: ['restore-entity'] }]);
+    expect(out.skipped).toEqual([
+      { scenario: 'authorized-restore', missing: ['restore-entity'] },
+      { scenario: 'backup-restore-after-delete', missing: ['snapshot-restore'] },
+      { scenario: 'derived-data-after-delete', missing: ['ponto de leitura "cache"', 'ponto de leitura "search"'] },
+    ]);
     expect(out.results.map((x: { verdict: { result: string } }) => x.verdict.result)).not.toContain('VIOLATION');
   });
 
@@ -59,6 +63,8 @@ describe('residuo (CLI)', () => {
     const md = await readFile(join(reportDir, 'held-update-after-delete.md'), 'utf8');
     expect(md).toContain('**Resultado:** VIOLATION');
     expect(md).toContain('residuo.json:notes-sync');
+    const html = await readFile(join(reportDir, 'held-update-after-delete.html'), 'utf8');
+    expect(html).toContain('"result":"VIOLATION"');
   });
 
   it('explore: sai com 1 e mostra a menor sequência', async () => {

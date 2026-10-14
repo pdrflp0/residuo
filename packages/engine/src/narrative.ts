@@ -30,6 +30,9 @@ const CONSUMER_OUTCOMES: Record<string, { tone: Tone; text: (o: StepObservation)
   DUPLICATE_IGNORED: { tone: 'conflict', text: () => 'Mensagem já processada antes: o inbox a ignorou explicitamente.' },
 };
 
+const POINT_LABEL: Record<string, string> = { cache: 'pelo cache', search: 'no índice de busca' };
+const via = (point?: string) => (point && point !== 'primary' ? ` ${POINT_LABEL[point] ?? `(${point})`}` : '');
+
 const isCause = (o: StepObservation, verdict?: Verdict) => verdict?.violations.some((v) => v.causedBySeq === o.seq) ?? false;
 
 export function describeStep(o: StepObservation, verdict?: Verdict): StepNarrative {
@@ -74,14 +77,24 @@ export function describeStep(o: StepObservation, verdict?: Verdict): StepNarrati
       return f.wrote
         ? { tone: 'restored', headline: `Restaurado por "${f.authorization?.actor ?? '?'}": ${g(f.generation)}, revisão ${f.revision}.` }
         : { tone: 'conflict', headline: `Restauração recusada (${f.writeOutcome ?? '?'}).` };
+    case 'snapshot':
+      return { tone: 'neutral', headline: `Backup feito${f.snapshotId ? ` (${f.snapshotId})` : ''}: guarda o estado de agora, com o registro vivo.` };
+    case 'restore-snapshot': {
+      if (!f.wrote) return { tone: 'conflict', headline: `Restauração do backup recusada (${f.writeOutcome ?? '?'}).` };
+      const n = f.reappliedDeletions;
+      const detail =
+        n === undefined ? '' : n > 0 ? `; o alvo reaplicou ${n} exclusão(ões) feitas depois do backup` : '; nenhuma exclusão posterior ao backup foi reaplicada';
+      return { tone: isCause(o, verdict) ? 'reappeared' : 'neutral', headline: `Backup restaurado${detail}.` };
+    }
     case 'inspect': {
-      if (!f.visible) return { tone: 'deleted', headline: 'Leitura: registro ausente.' };
+      const where = via(f.observationPoint);
+      if (!f.visible) return { tone: 'deleted', headline: `Leitura${where}: registro ausente.` };
       const isViolation = verdict?.violations.some((v) => v.observedAtSeq === o.seq || v.evidenceSeqs.includes(o.seq));
-      if (isViolation) return { tone: 'reappeared', headline: `Leitura: a geração excluída ${g(f.observedGeneration)} está visível de novo.` };
+      if (isViolation) return { tone: 'reappeared', headline: `Leitura${where}: a geração excluída ${g(f.observedGeneration)} está visível de novo.` };
       const allowance = verdict?.allowances.find((a) => a.observedAtSeq === o.seq);
       if (allowance?.kind === 'new-generation') return { tone: 'new', headline: `Leitura: visível a nova geração ${g(f.observedGeneration)}.` };
       if (allowance?.kind === 'authorized-restore') return { tone: 'restored', headline: `Leitura: ${g(f.observedGeneration)} visível por restauração autorizada.` };
-      return { tone: 'live', headline: `Leitura: ${g(f.observedGeneration)} visível, revisão ${f.observedRevision}.` };
+      return { tone: 'live', headline: `Leitura${where}: ${g(f.observedGeneration)} visível${f.observedRevision !== undefined ? `, revisão ${f.observedRevision}` : ''}.` };
     }
   }
 }

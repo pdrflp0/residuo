@@ -76,6 +76,11 @@ describe('API de execuções', () => {
     expect(md.headers.get('content-type')).toContain('text/markdown');
     expect(md.text).toContain('**Resultado:** VIOLATION');
     expect(md.text).toContain(created.body.id);
+
+    const html = await call<string>('GET', `/runs/${created.body.id}/report.html`);
+    expect(html.headers.get('content-type')).toContain('text/html');
+    expect(html.text).toContain(created.body.id);
+    expect(html.text).toContain('"result":"VIOLATION"');
   });
 
   it('replay preserva cenário, versão, semente e ordem, e chega à mesma classificação', async () => {

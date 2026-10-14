@@ -9,5 +9,6 @@ export { sanitize } from './sanitize';
 export { ReferenceHttpAdapter, REFERENCE_ADAPTER_VERSION } from './adapters/reference-http';
 export { ConfigHttpAdapter, CONFIG_ADAPTER_VERSION } from './adapters/config-http';
 export { render, renderPath, extract, lookup } from './adapters/template';
-export { requiredCapabilities, missingCapabilities, STEP_CAPABILITY } from './capabilities';
+export { requiredCapabilities, missingCapabilities, missingRequirements, requiredPoints, STEP_CAPABILITY } from './capabilities';
 export { exploreOrders, scenarioForOrder, allOrders, isValidOrder, EXPLORE_ACTIONS, type ExploreAction, type ExploreResult, type OrderRun } from './explore';
+export { renderHtml } from './report-html';

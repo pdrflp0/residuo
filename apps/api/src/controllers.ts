@@ -1,6 +1,6 @@
 import { BadRequestException, Body, Controller, Delete, Get, HttpCode, Inject, Param, Post, Query, Res } from '@nestjs/common';
 import { Mode, type TargetAdapter } from '@residuo/contracts';
-import { buildReport, compareRuns, DEFAULT_SEED, ENGINE_VERSION, regressionTest, renderMarkdown, SCENARIOS, summarizeScenario } from '@residuo/engine';
+import { buildReport, compareRuns, DEFAULT_SEED, ENGINE_VERSION, regressionTest, renderHtml, renderMarkdown, SCENARIOS, summarizeScenario } from '@residuo/engine';
 import type { Response } from 'express';
 import { z } from 'zod';
 import { LabStore } from './lab-store';
@@ -104,6 +104,15 @@ export class RunsController {
     res.setHeader('content-type', 'text/markdown; charset=utf-8');
     res.setHeader('content-disposition', `attachment; filename="residuo-${id}.md"`);
     return renderMarkdown(report);
+  }
+
+  /** Relatório HTML de arquivo único, sem recursos externos: para anexar numa issue ou PR. */
+  @Get(':id/report.html')
+  async reportHtml(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
+    const report = buildReport(await this.executor.detail(runId(id)));
+    res.setHeader('content-type', 'text/html; charset=utf-8');
+    res.setHeader('content-disposition', `attachment; filename="residuo-${id}.html"`);
+    return renderHtml(report);
   }
 
   @Get(':id/regression.test.ts')

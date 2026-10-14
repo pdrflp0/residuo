@@ -7,6 +7,7 @@ import {
   CircleDashed,
   CircleDot,
   CircleHelp,
+  DatabaseBackup,
   Eye,
   Ghost,
   Inbox,
@@ -48,6 +49,7 @@ export const LANES: { id: Lane; name: string; sub: string; icon: LucideIcon }[] 
   { id: 'api', name: 'API', sub: 'escritas no alvo', icon: Server },
   { id: 'client', name: 'Cliente offline', sub: 'prepara e retém', icon: WifiOff },
   { id: 'consumer', name: 'Consumidor', sub: 'fila de entregas', icon: Inbox },
+  { id: 'ops', name: 'Operação', sub: 'backup e restauração', icon: DatabaseBackup },
   { id: 'observer', name: 'Observador', sub: 'leituras do Resíduo', icon: Eye },
 ];
 
@@ -96,7 +98,10 @@ export function stepCode(o: StepObservation): string {
   if (o.status !== 'ok') return `${o.exchange?.response?.status ?? '—'} · falha`;
   const http = o.exchange?.response?.status ?? '';
   const f = o.facts;
-  if (o.kind === 'inspect') return f.visible ? `${http} · g${f.observedGeneration} r${f.observedRevision}` : `${http} · ausente`;
+  if (o.kind === 'inspect') {
+    const point = f.observationPoint ? ` · ${f.observationPoint}` : '';
+    return f.visible ? `${http} · g${f.observedGeneration} r${f.observedRevision}${point}` : `${http} · ausente${point}`;
+  }
   if (o.kind === 'confirm-deletion') return `${http} · ${f.confirmationStatus ?? '?'}`;
   return `${http} · ${f.writeOutcome ?? '?'}`;
 }

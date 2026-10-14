@@ -14,7 +14,7 @@ export function EntityCards({ entityId, steps, revealed, verdict }: Props) {
   return (
     <div className="entities" aria-label={`Estado até a etapa ${revealed}`}>
       <Card name={entityId} label="Registro" card={cards.record} />
-      <Card name="edição offline" label="Atualização pendente" card={cards.edit} />
+      <Card name={cards.middle.name} label={cards.middle.label} card={cards.middle.card} />
       <Card name="exclusão" label="Política de exclusão" card={cards.deletion} />
     </div>
   );

@@ -101,6 +101,45 @@ describe('restauração autorizada depende da política declarada', () => {
   });
 });
 
+describe('nível 3: backup restaurado', () => {
+  it('vulnerable: o restore traz a geração excluída de volta, e a causa é o próprio restore', async () => {
+    const r = await run(svc.adapter, config('backup-restore-after-delete', 'vulnerable'));
+    expect(r.verdict.result).toBe('VIOLATION');
+    const v = r.verdict.violations[0]!;
+    expect(v.attribution).toBe('provenance');
+    expect(r.steps.find((s) => s.seq === v.causedBySeq)?.stepId).toBe('restore-snapshot');
+    expect(r.steps.find((s) => s.stepId === 'restore-snapshot')?.facts.reappliedDeletions).toBe(0);
+  });
+
+  it('guarded: depois do restore, o registro de exclusões é reaplicado', async () => {
+    const r = await run(svc.adapter, config('backup-restore-after-delete', 'guarded'));
+    expect(r.verdict.result).toBe('NO_VIOLATION_OBSERVED');
+    expect(r.steps.find((s) => s.stepId === 'restore-snapshot')?.facts.reappliedDeletions).toBe(1);
+  });
+});
+
+describe('nível 3: cache e índice de busca', () => {
+  it('vulnerable: some do banco, mas sobrevive no cache e no índice (duas violações, "dado derivado")', async () => {
+    const r = await run(svc.adapter, config('derived-data-after-delete', 'vulnerable'));
+    expect(r.verdict.result).toBe('VIOLATION');
+    expect(r.steps.find((s) => s.stepId === 'inspect-primary')?.facts.visible).toBe(false);
+    expect(r.verdict.violations.map((v) => [v.observationPoint, v.attribution])).toEqual([
+      ['cache', 'stale-derived'],
+      ['search', 'stale-derived'],
+    ]);
+  });
+
+  it('guarded: a exclusão invalida cache e índice na mesma transação', async () => {
+    const r = await run(svc.adapter, config('derived-data-after-delete', 'guarded'));
+    expect(r.verdict.result).toBe('NO_VIOLATION_OBSERVED');
+    expect(r.verdict.checkedPoints.filter((p) => p.afterConfirmation).map((p) => [p.observationPoint ?? 'primary', p.visible])).toEqual([
+      ['primary', false],
+      ['cache', false],
+      ['search', false],
+    ]);
+  });
+});
+
 describe('falhas viram INCONCLUSIVE, nunca aprovação', () => {
   it('confirmação indisponível (503)', async () => {
     const r = await run(svc.adapter, config('held-update-after-delete', 'vulnerable', { fault: 'confirm-unavailable' }));

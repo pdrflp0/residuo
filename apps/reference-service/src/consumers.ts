@@ -45,6 +45,15 @@ export interface ConsumerResult {
 
 const opRef = (d: Delivery) => `delivery:${d.delivery_id}`;
 
+/** Mantém o índice de busca a par das escritas (os dois modos fazem isso; a diferença está na exclusão). */
+export async function indexItem(tx: Tx, ns: string, id: string, generation: number, revision: number, data: Record<string, unknown>, lastWrittenBy: string) {
+  await tx.query(
+    `INSERT INTO search_index (ns, id, generation, revision, title, last_written_by) VALUES ($1, $2, $3, $4, $5, $6)
+     ON CONFLICT (ns, id) DO UPDATE SET generation = EXCLUDED.generation, revision = EXCLUDED.revision, title = EXCLUDED.title, last_written_by = EXCLUDED.last_written_by`,
+    [ns, id, generation, revision, typeof data.title === 'string' ? data.title : null, lastWrittenBy],
+  );
+}
+
 export async function consumeVulnerable(tx: Tx, d: Delivery): Promise<ConsumerResult> {
   const { rows } = await tx.query(
     `INSERT INTO items (ns, id, generation, revision, data, last_written_by, updated_at)
@@ -58,6 +67,7 @@ export async function consumeVulnerable(tx: Tx, d: Delivery): Promise<ConsumerRe
     [d.ns, d.entity_id, d.generation, d.base_revision, d.data, opRef(d)],
   );
   const row = rows[0];
+  await indexItem(tx, d.ns, row.id, row.generation, row.revision, d.data, row.last_written_by);
   return {
     outcome: row.inserted ? 'UPSERT_INSERTED' : 'UPSERT_UPDATED',
     wrote: true,
@@ -116,5 +126,6 @@ async function decideGuarded(tx: Tx, d: Delivery): Promise<ConsumerResult> {
     [d.ns, d.entity_id, d.data, opRef(d)],
   );
   const u = rows[0];
+  await indexItem(tx, d.ns, u.id, u.generation, u.revision, d.data, u.last_written_by);
   return { outcome: 'APPLIED', wrote: true, item: { id: u.id, generation: u.generation, revision: u.revision, lastWrittenBy: u.last_written_by } };
 }

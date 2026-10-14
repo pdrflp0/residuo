@@ -53,6 +53,7 @@ export async function executeScenario(opts: ExecuteOptions): Promise<ExecutionRe
     creates: 0,
     deliveries: new Map<string, string>(),
     deletions: new Map<string, string>(),
+    snapshots: new Map<string, string>(),
   };
 
   let abortReason: string | undefined;
@@ -165,8 +166,19 @@ export async function executeScenario(opts: ExecuteOptions): Promise<ExecutionRe
           { id, deletionId: requireRef(ctx.deletions, step.params?.deletion, 'exclusão'), authorization: RESTORE_AUTHORIZATION },
           call,
         );
-      case 'inspect':
-        return adapter.inspectEntity(namespace, id, call);
+      case 'snapshot': {
+        const r = await adapter.takeSnapshot(namespace, call);
+        if (r.facts.snapshotId) ctx.snapshots.set(step.id, r.facts.snapshotId);
+        return r;
+      }
+      case 'restore-snapshot':
+        return adapter.restoreSnapshot(namespace, requireRef(ctx.snapshots, step.params?.snapshot, 'backup'), call);
+      case 'inspect': {
+        const point = step.params?.point;
+        const r = point && point !== 'primary' ? await adapter.inspectEntity(namespace, id, call, point) : await adapter.inspectEntity(namespace, id, call);
+        // o ponto de leitura é registrado pelo engine, não depende do adapter lembrar
+        return point && point !== 'primary' ? { ...r, facts: { ...r.facts, observationPoint: point } } : r;
+      }
     }
   }
 }

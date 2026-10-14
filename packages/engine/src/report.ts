@@ -6,7 +6,7 @@ export const ENGINE_VERSION = '0.1.0';
 export const ENGINE_LIMITS = [
   'Ausência de violação vale para esta sequência e estes pontos de observação; não prova correção em geral.',
   'A ordem é controlada por barreiras explícitas: a reexecução reproduz este interleaving, não a temporização de uma corrida real.',
-  'A semente gera apenas os dados sintéticos; outras ordens de entrega não são exploradas nesta versão.',
+  'A semente gera apenas os dados sintéticos. Outras ordens de entrega são exploradas pelo comando `residuo explore`, não por esta execução.',
   'Ausência numa leitura não equivale a apagamento físico de todas as cópias (réplicas, caches, backups, logs).',
   'Não é certificação de privacidade, conformidade legal nem exclusão criptograficamente comprovada.',
 ];
@@ -17,7 +17,10 @@ export function buildReport(detail: RunDetail, generatedAt: Date = new Date()): 
   return {
     schema: 'residuo.report/v1',
     generatedAt: generatedAt.toISOString(),
-    disclaimer: 'Dados sintéticos de demonstração, gerados contra o serviço de referência local.',
+    disclaimer:
+      c.mode === 'external'
+        ? 'Dados sintéticos gerados pelo Resíduo num namespace de teste do sistema descrito no residuo.json.'
+        : 'Dados sintéticos de demonstração, gerados contra o serviço de referência local.',
     run,
     scenario: detail.scenario,
     steps: detail.steps,
