@@ -121,5 +121,126 @@
       "file": "audio/narration-say/outro.wav"
     }
   ],
-  "elevenlabs": []
+  "elevenlabs": [
+    {
+      "id": "hook-1",
+      "at": 0.4,
+      "duration": 2.033,
+      "file": "audio/narration-elevenlabs/hook-1.wav"
+    },
+    {
+      "id": "hook-2",
+      "at": 3.2,
+      "duration": 0.771,
+      "file": "audio/narration-elevenlabs/hook-2.wav"
+    },
+    {
+      "id": "story-1",
+      "at": 5.2,
+      "duration": 1.517,
+      "file": "audio/narration-elevenlabs/story-1.wav"
+    },
+    {
+      "id": "story-2",
+      "at": 7.6,
+      "duration": 2.892,
+      "file": "audio/narration-elevenlabs/story-2.wav"
+    },
+    {
+      "id": "story-3",
+      "at": 11,
+      "duration": 2.992,
+      "file": "audio/narration-elevenlabs/story-3.wav"
+    },
+    {
+      "id": "story-4",
+      "at": 14.8,
+      "duration": 2.211,
+      "file": "audio/narration-elevenlabs/story-4.wav"
+    },
+    {
+      "id": "story-5",
+      "at": 17.85,
+      "duration": 2.72,
+      "file": "audio/narration-elevenlabs/story-5.wav"
+    },
+    {
+      "id": "intro",
+      "at": 21.2,
+      "duration": 5.74,
+      "file": "audio/narration-elevenlabs/intro.wav"
+    },
+    {
+      "id": "demo-1",
+      "at": 28.4,
+      "duration": 1.481,
+      "file": "audio/narration-elevenlabs/demo-1.wav"
+    },
+    {
+      "id": "demo-2",
+      "at": 30.8,
+      "duration": 4.504,
+      "file": "audio/narration-elevenlabs/demo-2.wav"
+    },
+    {
+      "id": "demo-3",
+      "at": 35.5,
+      "duration": 2.705,
+      "file": "audio/narration-elevenlabs/demo-3.wav"
+    },
+    {
+      "id": "demo-4",
+      "at": 38.4,
+      "duration": 1.914,
+      "file": "audio/narration-elevenlabs/demo-4.wav"
+    },
+    {
+      "id": "demo-5",
+      "at": 41.2,
+      "duration": 1.275,
+      "file": "audio/narration-elevenlabs/demo-5.wav"
+    },
+    {
+      "id": "demo-6",
+      "at": 43,
+      "duration": 3.088,
+      "file": "audio/narration-elevenlabs/demo-6.wav"
+    },
+    {
+      "id": "evidence-1",
+      "at": 46.9,
+      "duration": 2.853,
+      "file": "audio/narration-elevenlabs/evidence-1.wav"
+    },
+    {
+      "id": "evidence-2",
+      "at": 50,
+      "duration": 3.488,
+      "file": "audio/narration-elevenlabs/evidence-2.wav"
+    },
+    {
+      "id": "compare-1",
+      "at": 54.5,
+      "duration": 3.121,
+      "file": "audio/narration-elevenlabs/compare-1.wav"
+    },
+    {
+      "id": "compare-2",
+      "at": 59.6,
+      "duration": 3.783,
+      "file": "audio/narration-elevenlabs/compare-2.wav"
+    },
+    {
+      "id": "rules",
+      "at": 65,
+      "duration": 7,
+      "file": "audio/narration-elevenlabs/rules.wav"
+    },
+    {
+      "id": "outro",
+      "at": 73.3,
+      "duration": 2.371,
+      "file": "audio/narration-elevenlabs/outro.wav"
+    }
+  ]
 }
