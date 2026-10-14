@@ -1,0 +1,125 @@
+{
+  "say": [
+    {
+      "id": "hook-1",
+      "at": 0.4,
+      "duration": 2.462,
+      "file": "audio/narration-say/hook-1.wav"
+    },
+    {
+      "id": "hook-2",
+      "at": 3.2,
+      "duration": 0.868,
+      "file": "audio/narration-say/hook-2.wav"
+    },
+    {
+      "id": "story-1",
+      "at": 5.2,
+      "duration": 1.756,
+      "file": "audio/narration-say/story-1.wav"
+    },
+    {
+      "id": "story-2",
+      "at": 7.6,
+      "duration": 3.157,
+      "file": "audio/narration-say/story-2.wav"
+    },
+    {
+      "id": "story-3",
+      "at": 11,
+      "duration": 3.645,
+      "file": "audio/narration-say/story-3.wav"
+    },
+    {
+      "id": "story-4",
+      "at": 14.8,
+      "duration": 2.821,
+      "file": "audio/narration-say/story-4.wav"
+    },
+    {
+      "id": "story-5",
+      "at": 17.85,
+      "duration": 3.03,
+      "file": "audio/narration-say/story-5.wav"
+    },
+    {
+      "id": "intro",
+      "at": 21.2,
+      "duration": 5.793,
+      "file": "audio/narration-say/intro.wav"
+    },
+    {
+      "id": "demo-1",
+      "at": 28.4,
+      "duration": 1.911,
+      "file": "audio/narration-say/demo-1.wav"
+    },
+    {
+      "id": "demo-2",
+      "at": 30.8,
+      "duration": 3.663,
+      "file": "audio/narration-say/demo-2.wav"
+    },
+    {
+      "id": "demo-3",
+      "at": 35.3,
+      "duration": 2.647,
+      "file": "audio/narration-say/demo-3.wav"
+    },
+    {
+      "id": "demo-4",
+      "at": 38.4,
+      "duration": 2.312,
+      "file": "audio/narration-say/demo-4.wav"
+    },
+    {
+      "id": "demo-5",
+      "at": 41.2,
+      "duration": 1.489,
+      "file": "audio/narration-say/demo-5.wav"
+    },
+    {
+      "id": "demo-6",
+      "at": 43,
+      "duration": 2.912,
+      "file": "audio/narration-say/demo-6.wav"
+    },
+    {
+      "id": "evidence-1",
+      "at": 46.9,
+      "duration": 2.756,
+      "file": "audio/narration-say/evidence-1.wav"
+    },
+    {
+      "id": "evidence-2",
+      "at": 49.8,
+      "duration": 3.291,
+      "file": "audio/narration-say/evidence-2.wav"
+    },
+    {
+      "id": "compare-1",
+      "at": 54.5,
+      "duration": 3.471,
+      "file": "audio/narration-say/compare-1.wav"
+    },
+    {
+      "id": "compare-2",
+      "at": 59.6,
+      "duration": 3.625,
+      "file": "audio/narration-say/compare-2.wav"
+    },
+    {
+      "id": "rules",
+      "at": 65,
+      "duration": 6.134,
+      "file": "audio/narration-say/rules.wav"
+    },
+    {
+      "id": "outro",
+      "at": 73.3,
+      "duration": 2.685,
+      "file": "audio/narration-say/outro.wav"
+    }
+  ],
+  "elevenlabs": []
+}

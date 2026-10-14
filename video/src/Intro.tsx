@@ -1,4 +1,5 @@
 import { linearTiming, TransitionSeries } from '@remotion/transitions';
+import { AbsoluteFill } from 'remotion';
 import { fade } from '@remotion/transitions/fade';
 import { slide } from '@remotion/transitions/slide';
 import { Compare, COMPARE_FRAMES } from './scenes/Compare';
@@ -9,6 +10,7 @@ import { Intro as ResiduoIntro, INTRO_FRAMES } from './scenes/Intro';
 import { Outro, OUTRO_FRAMES } from './scenes/Outro';
 import { Principles, PRINCIPLES_FRAMES } from './scenes/Principles';
 import { Story, STORY_FRAMES } from './scenes/Story';
+import { Soundtrack, type Voice } from './Soundtrack';
 
 const T = 15;
 const SCENES = [HOOK_FRAMES, STORY_FRAMES, INTRO_FRAMES, DEMO_FRAMES, EVIDENCE_FRAMES, COMPARE_FRAMES, PRINCIPLES_FRAMES, OUTRO_FRAMES];
@@ -16,9 +18,11 @@ export const TOTAL_FRAMES = SCENES.reduce((a, b) => a + b, 0) - T * (SCENES.leng
 
 const timing = linearTiming({ durationInFrames: T });
 
-export function ResiduoVideo() {
+export function ResiduoVideo({ voice = 'none' }: { voice?: Voice }) {
   return (
-    <TransitionSeries>
+    <AbsoluteFill>
+      <Soundtrack voice={voice} />
+      <TransitionSeries>
       <TransitionSeries.Sequence durationInFrames={HOOK_FRAMES}>
         <Hook />
       </TransitionSeries.Sequence>
@@ -50,6 +54,7 @@ export function ResiduoVideo() {
       <TransitionSeries.Sequence durationInFrames={OUTRO_FRAMES}>
         <Outro />
       </TransitionSeries.Sequence>
-    </TransitionSeries>
+      </TransitionSeries>
+    </AbsoluteFill>
   );
 }

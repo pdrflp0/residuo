@@ -11,3 +11,6 @@ divulgacao/
 # projeto do vídeo: dependências e saídas de renderização
 video/node_modules/
 video/out/
+video/.env.local
+video/public/audio/narration-*/
+video/public/audio/music.wav
