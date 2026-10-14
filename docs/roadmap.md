@@ -27,11 +27,16 @@ Conversar com 3 a 5 desenvolvedores que mantêm sincronização offline, jobs de
 
 Medir depois: tempo para preparar o caso, se o relatório bastou para reproduzir, esforço do adapter, bugs encontrados. **Nenhum desses números existe ainda.**
 
-## Publicação — passos pendentes (nada foi publicado)
+## Publicação
 
-1. Revisar o histórico e fazer o primeiro commit (o repositório foi inicializado sem commits).
-2. Criar o repositório no GitHub (público) e enviar; conferir que `.env` não está versionado.
-3. Adicionar CI (GitHub Actions) com serviço `postgres:18`, rodando `npm ci`, `npm run typecheck`, `npm test` e `npx playwright install --only-shell chromium && npm run test:e2e`.
-4. Gravar o vídeo de 60–90 s seguindo [demo.md](demo.md) e anexar um GIF curto ao README.
-5. Opcional: deploy de demonstração (exige hospedagem com Postgres; decisão e custo do Pedro).
-6. Escrever o post do LinkedIn e a frase do currículo **depois** de revisar o que foi verificado, citando só capacidades demonstráveis.
+Feito em 14/10/2026:
+
+- [x] Primeiro commit e repositório público [pdrflp0/residuo](https://github.com/pdrflp0/residuo)
+- [x] CI no GitHub Actions (typecheck, testes com Postgres, ponta a ponta com Playwright), verde no primeiro envio
+- [x] Vídeo de apresentação de 79 s ([docs/media/residuo-intro.mp4](media/residuo-intro.mp4)), gerado por código a partir de capturas reais
+
+Pendente (decisão do Pedro):
+
+- [ ] Publicar o post no LinkedIn com o vídeo
+- [ ] Atualizar o currículo, citando só capacidades demonstráveis
+- [ ] Opcional: demo online (exige hospedagem com Postgres, proteção contra abuso e custo)

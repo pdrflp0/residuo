@@ -1,0 +1,27 @@
+{
+  "name": "residuo-video",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Vídeo de apresentação do Resíduo, feito em código com Remotion.",
+  "scripts": {
+    "capture": "node scripts/capture.mjs",
+    "studio": "remotion studio src/index.ts",
+    "still": "remotion still src/index.ts ResiduoIntro",
+    "render": "remotion render src/index.ts ResiduoIntro out/residuo-intro.mp4 --codec h264 --crf 18",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.535",
+    "@remotion/fonts": "4.0.535",
+    "@remotion/transitions": "4.0.535",
+    "lucide-react": "1.56.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "remotion": "4.0.535"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "typescript": "7.0.2"
+  }
+}

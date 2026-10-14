@@ -1,5 +1,7 @@
 # Resíduo
 
+[![CI](https://github.com/pdrflp0/residuo/actions/workflows/ci.yml/badge.svg)](https://github.com/pdrflp0/residuo/actions/workflows/ci.yml)
+
 **Laboratório visual para descobrir como um registro apagado pode reaparecer numa aplicação.**
 
 O Resíduo executa uma sequência controlada contra um serviço de teste real — criar um registro, guardar uma edição antiga, excluir, confirmar a exclusão e só então liberar a edição — e mostra, com evidência, se o registro voltou, em qual operação e se isso viola a política declarada. O resultado é um caso de bug reproduzível, com relatório exportável e um teste de regressão para acompanhar a correção.
@@ -7,6 +9,10 @@ O Resíduo executa uma sequência controlada contra um serviço de teste real �
 > Nível 1 · dados sintéticos de demonstração · alvo: serviço de referência local · ainda não validado com usuários.
 >
 > **Primeira vez aqui?** Leia [Entenda o Resíduo em 5 minutos](docs/entenda.md): o bug explicado com um exemplo do dia a dia e um glossário.
+
+[![Vídeo de apresentação (79 s): clique para assistir](docs/img/video-capa.png)](docs/media/residuo-intro.mp4)
+
+▶ [Assistir ao vídeo de apresentação (79 s)](docs/media/residuo-intro.mp4) — feito em código com Remotion a partir de capturas reais do app ([video/](video/)).
 
 ![Execução no modo vulnerable: a geração excluída g1 volta na etapa 9](docs/img/run-vulnerable.png)
 
@@ -112,6 +118,7 @@ O avaliador e o alvo ficam em bancos separados: tudo o que o Resíduo sabe do al
 - [docs/exemplo-relatorio.md](docs/exemplo-relatorio.md) e [.json](docs/exemplo-relatorio.json) — relatório real exportado
 - [docs/revisao.md](docs/revisao.md) — o que a revisão independente encontrou e como foi corrigido
 - [docs/roadmap.md](docs/roadmap.md) — níveis 2 e 3, validação com desenvolvedores, publicação
+- [video/](video/) — o vídeo de apresentação como código (Remotion)
 
 ## Limites (importante)
 
