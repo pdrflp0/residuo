@@ -1,0 +1,24 @@
+{
+  "name": "@residuo/reference-service",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Alvo de teste com dois modos: vulnerable (upsert ressuscita) e guarded (marcador de exclusão por geração).",
+  "exports": { ".": "./src/app.ts" },
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@nestjs/common": "12.1.3",
+    "@nestjs/core": "12.1.3",
+    "@nestjs/platform-express": "12.1.3",
+    "@residuo/contracts": "0.1.0",
+    "pg": "8.23.1",
+    "reflect-metadata": "0.2.2",
+    "rxjs": "7.8.2",
+    "zod": "4.6.7"
+  },
+  "devDependencies": { "@types/pg": "8.23.1", "@types/express": "5.0.6" }
+}

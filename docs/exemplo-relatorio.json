@@ -1,0 +1,603 @@
+{
+    "schema": "residuo.report/v1",
+    "generatedAt": "2026-10-14T06:26:32.356Z",
+    "disclaimer": "Dados sint\u00e9ticos de demonstra\u00e7\u00e3o, gerados contra o servi\u00e7o de refer\u00eancia local.",
+    "run": {
+        "id": "run_4096eecb4d",
+        "scenarioId": "held-update-after-delete",
+        "scenarioVersion": "1.0.0",
+        "engineVersion": "0.1.0",
+        "adapter": {
+            "name": "reference-service-http",
+            "limits": [
+                "Observa somente a visibilidade pela API de leitura do alvo; n\u00e3o inspeciona r\u00e9plicas, caches, backups, logs ou armazenamento f\u00edsico.",
+                "Aceita apenas o servi\u00e7o de refer\u00eancia local configurado no servidor; n\u00e3o testa URLs arbitr\u00e1rias."
+            ],
+            "version": "0.1.0",
+            "capabilities": [
+                "create-entity",
+                "prepare-update",
+                "hold-release-delivery",
+                "redeliver",
+                "delete-entity",
+                "confirm-deletion",
+                "restore-entity",
+                "inspect-entity",
+                "write-provenance",
+                "namespace-isolation"
+            ],
+            "observationPoints": [
+                "Leitura do registro pela API p\u00fablica do alvo: GET /ns/{ns}/items/{id}"
+            ]
+        },
+        "config": {
+            "mode": "vulnerable",
+            "seed": 1200,
+            "fault": "none",
+            "policy": "delete-wins",
+            "stepMode": "auto",
+            "timeoutMs": 3000,
+            "scenarioId": "held-update-after-delete",
+            "scenarioVersion": "1.0.0"
+        },
+        "namespace": "rsd-run-4096eecb4d",
+        "entityId": "item-17",
+        "status": "completed",
+        "createdAt": "2026-10-14T06:26:29.215Z",
+        "startedAt": "2026-10-14T06:26:29.232Z",
+        "finishedAt": "2026-10-14T06:26:29.278Z",
+        "verdict": {
+            "result": "VIOLATION",
+            "summary": "A gera\u00e7\u00e3o g1 de item-17, exclu\u00edda e confirmada na etapa 6, voltou a ficar vis\u00edvel na etapa 9. O alvo informa que a \u00faltima escrita veio de \"Liberar edi\u00e7\u00e3o antiga\" (etapa 8, resultado UPSERT_INSERTED).",
+            "allowances": [],
+            "violations": [
+                {
+                    "entityId": "item-17",
+                    "invariant": "deleted-generation-stays-gone",
+                    "generation": 1,
+                    "attribution": "provenance",
+                    "causedBySeq": 8,
+                    "explanation": "A gera\u00e7\u00e3o g1 de item-17, exclu\u00edda e confirmada na etapa 6, voltou a ficar vis\u00edvel na etapa 9. O alvo informa que a \u00faltima escrita veio de \"Liberar edi\u00e7\u00e3o antiga\" (etapa 8, resultado UPSERT_INSERTED).",
+                    "evidenceSeqs": [
+                        5,
+                        6,
+                        8,
+                        9
+                    ],
+                    "observedAtSeq": 9
+                }
+            ],
+            "checkedPoints": [
+                {
+                    "seq": 4,
+                    "stepId": "inspect-before",
+                    "visible": true,
+                    "afterConfirmation": false,
+                    "observedGeneration": 1
+                },
+                {
+                    "seq": 7,
+                    "stepId": "inspect-deleted",
+                    "visible": false,
+                    "afterConfirmation": true
+                },
+                {
+                    "seq": 9,
+                    "stepId": "inspect-after",
+                    "visible": true,
+                    "afterConfirmation": true,
+                    "observedGeneration": 1
+                }
+            ],
+            "confirmationSeq": 6,
+            "deletedGeneration": 1,
+            "inconclusiveReasons": []
+        }
+    },
+    "scenario": {
+        "id": "held-update-after-delete",
+        "version": "1.0.0",
+        "title": "Atualiza\u00e7\u00e3o retida chega depois da exclus\u00e3o",
+        "summary": "Um cliente prepara uma edi\u00e7\u00e3o a partir da revis\u00e3o 1, o envio fica retido, outro cliente exclui o registro e a edi\u00e7\u00e3o antiga chega ao consumidor depois da exclus\u00e3o confirmada.",
+        "defaultPolicy": "delete-wins",
+        "story": [
+            "O registro foi criado.",
+            "Foi apagado e a exclus\u00e3o foi confirmada.",
+            "Chegou uma atualiza\u00e7\u00e3o antiga.",
+            "O registro voltou?"
+        ],
+        "steps": [
+            {
+                "id": "create",
+                "kind": "create",
+                "lane": "api",
+                "title": "Criar registro",
+                "plain": "A API cria a ficha."
+            },
+            {
+                "id": "prepare",
+                "kind": "prepare-update",
+                "lane": "client",
+                "title": "Preparar edi\u00e7\u00e3o offline",
+                "plain": "Um cliente edita a ficha a partir da revis\u00e3o atual."
+            },
+            {
+                "id": "hold",
+                "kind": "hold",
+                "lane": "client",
+                "title": "Reter envio",
+                "plain": "O envio fica preso (fila parada ou aparelho offline)."
+            },
+            {
+                "id": "inspect-before",
+                "kind": "inspect",
+                "lane": "observer",
+                "title": "Ler estado inicial",
+                "plain": "O Res\u00edduo l\u00ea o registro para ter uma linha de base."
+            },
+            {
+                "id": "delete",
+                "kind": "delete",
+                "lane": "api",
+                "title": "Excluir registro",
+                "plain": "Outro cliente pede a exclus\u00e3o."
+            },
+            {
+                "id": "confirm",
+                "kind": "confirm-deletion",
+                "lane": "api",
+                "title": "Confirmar exclus\u00e3o",
+                "plain": "O servi\u00e7o confirma que a exclus\u00e3o est\u00e1 em vigor."
+            },
+            {
+                "id": "inspect-deleted",
+                "kind": "inspect",
+                "lane": "observer",
+                "title": "Ler ap\u00f3s exclus\u00e3o",
+                "plain": "O Res\u00edduo verifica que o registro sumiu."
+            },
+            {
+                "id": "release",
+                "kind": "release",
+                "lane": "consumer",
+                "title": "Liberar edi\u00e7\u00e3o antiga",
+                "plain": "A edi\u00e7\u00e3o retida finalmente chega ao consumidor."
+            },
+            {
+                "id": "inspect-after",
+                "kind": "inspect",
+                "lane": "observer",
+                "title": "Ler estado final",
+                "plain": "O Res\u00edduo l\u00ea o registro de novo: ele voltou?"
+            }
+        ]
+    },
+    "steps": [
+        {
+            "seq": 1,
+            "stepId": "create",
+            "kind": "create",
+            "lane": "api",
+            "title": "Criar registro",
+            "status": "ok",
+            "startedAt": "2026-10-14T06:26:29.250Z",
+            "finishedAt": "2026-10-14T06:26:29.255Z",
+            "facts": {
+                "opRef": "create:op_d804b7606b46",
+                "wrote": true,
+                "entityId": "item-17",
+                "revision": 1,
+                "generation": 1,
+                "writeOutcome": "CREATED"
+            },
+            "exchange": {
+                "request": {
+                    "body": {
+                        "id": "item-17",
+                        "data": {
+                            "note": "dado sint\u00e9tico de demonstra\u00e7\u00e3o",
+                            "title": "Cadastro de fornecedor"
+                        }
+                    },
+                    "path": "/ns/rsd-run-4096eecb4d/items",
+                    "method": "POST"
+                },
+                "response": {
+                    "body": {
+                        "item": {
+                            "id": "item-17",
+                            "data": {
+                                "note": "dado sint\u00e9tico de demonstra\u00e7\u00e3o",
+                                "title": "Cadastro de fornecedor"
+                            },
+                            "revision": 1,
+                            "updatedAt": "2026-10-14T06:26:29.250Z",
+                            "generation": 1,
+                            "lastWrittenBy": "create:op_d804b7606b46"
+                        },
+                        "outcome": "CREATED"
+                    },
+                    "status": 201
+                },
+                "durationMs": 4
+            }
+        },
+        {
+            "seq": 2,
+            "stepId": "prepare",
+            "kind": "prepare-update",
+            "lane": "client",
+            "title": "Preparar edi\u00e7\u00e3o offline",
+            "status": "ok",
+            "startedAt": "2026-10-14T06:26:29.256Z",
+            "finishedAt": "2026-10-14T06:26:29.259Z",
+            "facts": {
+                "wrote": false,
+                "entityId": "item-17",
+                "deliveryId": "dlv_8df7143d3a0a",
+                "generation": 1,
+                "baseRevision": 1,
+                "writeOutcome": "PREPARED"
+            },
+            "exchange": {
+                "request": {
+                    "body": {
+                        "id": "item-17",
+                        "data": {
+                            "note": "edi\u00e7\u00e3o offline: corrigir telefone",
+                            "title": "Cadastro de fornecedor"
+                        },
+                        "generation": 1,
+                        "baseRevision": 1
+                    },
+                    "path": "/ns/rsd-run-4096eecb4d/client/updates",
+                    "method": "POST"
+                },
+                "response": {
+                    "body": {
+                        "status": "prepared",
+                        "entityId": "item-17",
+                        "deliveryId": "dlv_8df7143d3a0a",
+                        "generation": 1,
+                        "baseRevision": 1
+                    },
+                    "status": 201
+                },
+                "durationMs": 3
+            }
+        },
+        {
+            "seq": 3,
+            "stepId": "hold",
+            "kind": "hold",
+            "lane": "client",
+            "title": "Reter envio",
+            "status": "ok",
+            "startedAt": "2026-10-14T06:26:29.260Z",
+            "finishedAt": "2026-10-14T06:26:29.262Z",
+            "facts": {
+                "wrote": false,
+                "entityId": "item-17",
+                "deliveryId": "dlv_8df7143d3a0a",
+                "writeOutcome": "HELD"
+            },
+            "exchange": {
+                "request": {
+                    "path": "/ns/rsd-run-4096eecb4d/deliveries/dlv_8df7143d3a0a/hold",
+                    "method": "POST"
+                },
+                "response": {
+                    "body": {
+                        "status": "held",
+                        "entityId": "item-17",
+                        "deliveryId": "dlv_8df7143d3a0a"
+                    },
+                    "status": 200
+                },
+                "durationMs": 2
+            }
+        },
+        {
+            "seq": 4,
+            "stepId": "inspect-before",
+            "kind": "inspect",
+            "lane": "observer",
+            "title": "Ler estado inicial",
+            "status": "ok",
+            "startedAt": "2026-10-14T06:26:29.263Z",
+            "finishedAt": "2026-10-14T06:26:29.264Z",
+            "facts": {
+                "visible": true,
+                "entityId": "item-17",
+                "lastWrittenBy": "create:op_d804b7606b46",
+                "observedRevision": 1,
+                "observedGeneration": 1
+            },
+            "exchange": {
+                "request": {
+                    "path": "/ns/rsd-run-4096eecb4d/items/item-17",
+                    "method": "GET"
+                },
+                "response": {
+                    "body": {
+                        "item": {
+                            "id": "item-17",
+                            "data": {
+                                "note": "dado sint\u00e9tico de demonstra\u00e7\u00e3o",
+                                "title": "Cadastro de fornecedor"
+                            },
+                            "revision": 1,
+                            "updatedAt": "2026-10-14T06:26:29.250Z",
+                            "generation": 1,
+                            "lastWrittenBy": "create:op_d804b7606b46"
+                        }
+                    },
+                    "status": 200
+                },
+                "durationMs": 1
+            }
+        },
+        {
+            "seq": 5,
+            "stepId": "delete",
+            "kind": "delete",
+            "lane": "api",
+            "title": "Excluir registro",
+            "status": "ok",
+            "startedAt": "2026-10-14T06:26:29.265Z",
+            "finishedAt": "2026-10-14T06:26:29.268Z",
+            "facts": {
+                "wrote": true,
+                "entityId": "item-17",
+                "revision": 1,
+                "deletionId": "del_961efe89a8ec",
+                "generation": 1,
+                "writeOutcome": "DELETED"
+            },
+            "exchange": {
+                "request": {
+                    "path": "/ns/rsd-run-4096eecb4d/items/item-17?generation=1",
+                    "method": "DELETE"
+                },
+                "response": {
+                    "body": {
+                        "outcome": "DELETED",
+                        "deletion": {
+                            "id": "item-17",
+                            "status": "effective",
+                            "revision": 1,
+                            "mechanism": "row-removed",
+                            "deletionId": "del_961efe89a8ec",
+                            "generation": 1
+                        }
+                    },
+                    "status": 200
+                },
+                "durationMs": 3
+            }
+        },
+        {
+            "seq": 6,
+            "stepId": "confirm",
+            "kind": "confirm-deletion",
+            "lane": "api",
+            "title": "Confirmar exclus\u00e3o",
+            "status": "ok",
+            "startedAt": "2026-10-14T06:26:29.268Z",
+            "finishedAt": "2026-10-14T06:26:29.270Z",
+            "facts": {
+                "entityId": "item-17",
+                "confirmed": true,
+                "mechanism": "row-removed",
+                "deletionId": "del_961efe89a8ec",
+                "generation": 1,
+                "confirmationStatus": "effective"
+            },
+            "exchange": {
+                "request": {
+                    "path": "/ns/rsd-run-4096eecb4d/deletions/del_961efe89a8ec",
+                    "method": "GET"
+                },
+                "response": {
+                    "body": {
+                        "id": "item-17",
+                        "status": "effective",
+                        "revision": 1,
+                        "mechanism": "row-removed",
+                        "deletionId": "del_961efe89a8ec",
+                        "generation": 1,
+                        "effectiveAt": "2026-10-14T06:26:29.264Z"
+                    },
+                    "status": 200
+                },
+                "durationMs": 2
+            }
+        },
+        {
+            "seq": 7,
+            "stepId": "inspect-deleted",
+            "kind": "inspect",
+            "lane": "observer",
+            "title": "Ler ap\u00f3s exclus\u00e3o",
+            "status": "ok",
+            "startedAt": "2026-10-14T06:26:29.271Z",
+            "finishedAt": "2026-10-14T06:26:29.272Z",
+            "facts": {
+                "visible": false,
+                "entityId": "item-17"
+            },
+            "exchange": {
+                "request": {
+                    "path": "/ns/rsd-run-4096eecb4d/items/item-17",
+                    "method": "GET"
+                },
+                "response": {
+                    "body": {
+                        "id": "item-17",
+                        "outcome": "NOT_FOUND"
+                    },
+                    "status": 404
+                },
+                "durationMs": 1
+            }
+        },
+        {
+            "seq": 8,
+            "stepId": "release",
+            "kind": "release",
+            "lane": "consumer",
+            "title": "Liberar edi\u00e7\u00e3o antiga",
+            "status": "ok",
+            "startedAt": "2026-10-14T06:26:29.272Z",
+            "finishedAt": "2026-10-14T06:26:29.276Z",
+            "facts": {
+                "opRef": "delivery:dlv_8df7143d3a0a",
+                "wrote": true,
+                "entityId": "item-17",
+                "revision": 2,
+                "deliveryId": "dlv_8df7143d3a0a",
+                "generation": 1,
+                "baseRevision": 1,
+                "writeOutcome": "UPSERT_INSERTED"
+            },
+            "exchange": {
+                "request": {
+                    "path": "/ns/rsd-run-4096eecb4d/deliveries/dlv_8df7143d3a0a/release",
+                    "method": "POST"
+                },
+                "response": {
+                    "body": {
+                        "consumer": {
+                            "item": {
+                                "id": "item-17",
+                                "revision": 2,
+                                "generation": 1,
+                                "lastWrittenBy": "delivery:dlv_8df7143d3a0a"
+                            },
+                            "wrote": true,
+                            "outcome": "UPSERT_INSERTED"
+                        },
+                        "entityId": "item-17",
+                        "deliveryId": "dlv_8df7143d3a0a",
+                        "generation": 1,
+                        "baseRevision": 1,
+                        "deliveryCount": 1
+                    },
+                    "status": 200
+                },
+                "durationMs": 4
+            }
+        },
+        {
+            "seq": 9,
+            "stepId": "inspect-after",
+            "kind": "inspect",
+            "lane": "observer",
+            "title": "Ler estado final",
+            "status": "ok",
+            "startedAt": "2026-10-14T06:26:29.277Z",
+            "finishedAt": "2026-10-14T06:26:29.279Z",
+            "facts": {
+                "visible": true,
+                "entityId": "item-17",
+                "lastWrittenBy": "delivery:dlv_8df7143d3a0a",
+                "observedRevision": 2,
+                "observedGeneration": 1
+            },
+            "exchange": {
+                "request": {
+                    "path": "/ns/rsd-run-4096eecb4d/items/item-17",
+                    "method": "GET"
+                },
+                "response": {
+                    "body": {
+                        "item": {
+                            "id": "item-17",
+                            "data": {
+                                "note": "edi\u00e7\u00e3o offline: corrigir telefone",
+                                "title": "Cadastro de fornecedor"
+                            },
+                            "revision": 2,
+                            "updatedAt": "2026-10-14T06:26:29.271Z",
+                            "generation": 1,
+                            "lastWrittenBy": "delivery:dlv_8df7143d3a0a"
+                        }
+                    },
+                    "status": 200
+                },
+                "durationMs": 1
+            }
+        }
+    ],
+    "verdict": {
+        "result": "VIOLATION",
+        "summary": "A gera\u00e7\u00e3o g1 de item-17, exclu\u00edda e confirmada na etapa 6, voltou a ficar vis\u00edvel na etapa 9. O alvo informa que a \u00faltima escrita veio de \"Liberar edi\u00e7\u00e3o antiga\" (etapa 8, resultado UPSERT_INSERTED).",
+        "allowances": [],
+        "violations": [
+            {
+                "entityId": "item-17",
+                "invariant": "deleted-generation-stays-gone",
+                "generation": 1,
+                "attribution": "provenance",
+                "causedBySeq": 8,
+                "explanation": "A gera\u00e7\u00e3o g1 de item-17, exclu\u00edda e confirmada na etapa 6, voltou a ficar vis\u00edvel na etapa 9. O alvo informa que a \u00faltima escrita veio de \"Liberar edi\u00e7\u00e3o antiga\" (etapa 8, resultado UPSERT_INSERTED).",
+                "evidenceSeqs": [
+                    5,
+                    6,
+                    8,
+                    9
+                ],
+                "observedAtSeq": 9
+            }
+        ],
+        "checkedPoints": [
+            {
+                "seq": 4,
+                "stepId": "inspect-before",
+                "visible": true,
+                "afterConfirmation": false,
+                "observedGeneration": 1
+            },
+            {
+                "seq": 7,
+                "stepId": "inspect-deleted",
+                "visible": false,
+                "afterConfirmation": true
+            },
+            {
+                "seq": 9,
+                "stepId": "inspect-after",
+                "visible": true,
+                "afterConfirmation": true,
+                "observedGeneration": 1
+            }
+        ],
+        "confirmationSeq": 6,
+        "deletedGeneration": 1,
+        "inconclusiveReasons": []
+    },
+    "limits": [
+        "Aus\u00eancia de viola\u00e7\u00e3o vale para esta sequ\u00eancia e estes pontos de observa\u00e7\u00e3o; n\u00e3o prova corre\u00e7\u00e3o em geral.",
+        "A ordem \u00e9 controlada por barreiras expl\u00edcitas: a reexecu\u00e7\u00e3o reproduz este interleaving, n\u00e3o a temporiza\u00e7\u00e3o de uma corrida real.",
+        "A semente gera apenas os dados sint\u00e9ticos; outras ordens de entrega n\u00e3o s\u00e3o exploradas nesta vers\u00e3o.",
+        "Aus\u00eancia numa leitura n\u00e3o equivale a apagamento f\u00edsico de todas as c\u00f3pias (r\u00e9plicas, caches, backups, logs).",
+        "N\u00e3o \u00e9 certifica\u00e7\u00e3o de privacidade, conformidade legal nem exclus\u00e3o criptograficamente comprovada.",
+        "Observa somente a visibilidade pela API de leitura do alvo; n\u00e3o inspeciona r\u00e9plicas, caches, backups, logs ou armazenamento f\u00edsico.",
+        "Aceita apenas o servi\u00e7o de refer\u00eancia local configurado no servidor; n\u00e3o testa URLs arbitr\u00e1rias."
+    ],
+    "reproduce": {
+        "api": {
+            "method": "POST",
+            "path": "/api/runs",
+            "body": {
+                "scenarioId": "held-update-after-delete",
+                "mode": "vulnerable",
+                "policy": "delete-wins",
+                "seed": 1200,
+                "fault": "none",
+                "timeoutMs": 3000
+            }
+        },
+        "cli": "npm run lab -- --scenario held-update-after-delete --mode vulnerable --policy delete-wins --seed 1200 --fault none --timeout 3000"
+    }
+}

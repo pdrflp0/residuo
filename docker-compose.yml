@@ -1,0 +1,47 @@
+# Ambiente local do Resíduo. Apenas dados sintéticos de demonstração.
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: residuo
+      POSTGRES_PASSWORD: residuo-local-only
+      POSTGRES_DB: residuo
+    ports:
+      - "127.0.0.1:54329:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U residuo -d residuo"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  reference-service:
+    profiles: ["full"]
+    build: { context: ., dockerfile: infra/node.Dockerfile }
+    command: ["npm", "run", "start", "-w", "@residuo/reference-service"]
+    environment:
+      TARGET_DATABASE_URL: postgres://residuo:residuo-local-only@postgres:5432/residuo_target
+      REFERENCE_PORT: "4100"
+      HOST: 0.0.0.0
+    depends_on:
+      postgres: { condition: service_healthy }
+    ports: ["127.0.0.1:4100:4100"]
+
+  api:
+    profiles: ["full"]
+    build: { context: ., dockerfile: infra/node.Dockerfile }
+    command: ["npm", "run", "start", "-w", "@residuo/api"]
+    environment:
+      LAB_DATABASE_URL: postgres://residuo:residuo-local-only@postgres:5432/residuo_lab
+      REFERENCE_SERVICE_URL: http://reference-service:4100
+      WEB_DIST: /app/apps/web/dist
+      API_PORT: "4000"
+      HOST: 0.0.0.0
+    depends_on:
+      postgres: { condition: service_healthy }
+      reference-service: { condition: service_started }
+    ports: ["127.0.0.1:4000:4000"]
+
+volumes:
+  pgdata:

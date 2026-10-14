@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.env
+test-results/
+playwright-report/
+*.log
+.DS_Store
+.claude/
+# rascunhos de divulgação (post, currículo) ficam só na máquina local
+divulgacao/
+# projeto do vídeo: dependências e saídas de renderização
+video/node_modules/
+video/out/

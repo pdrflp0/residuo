@@ -1,0 +1,105 @@
+import type { RunDetail } from '@residuo/contracts';
+import { describe, expect, it } from 'vitest';
+import { compareRuns } from '../src/compare';
+import { evaluate } from '../src/evaluate';
+import { describeStep } from '../src/narrative';
+import { buildReport, renderMarkdown } from '../src/report';
+import { sanitize } from '../src/sanitize';
+import { getScenario, summarizeScenario } from '../src/scenarios';
+import { Trace } from './fixtures';
+
+function detail(mode: 'vulnerable' | 'guarded', trace: Trace, id = `run_${mode}`): RunDetail {
+  const scenario = getScenario('held-update-after-delete')!;
+  const verdict = evaluate({ policy: 'delete-wins', steps: trace.steps });
+  return {
+    scenario: summarizeScenario(scenario),
+    steps: trace.steps,
+    run: {
+      id,
+      scenarioId: scenario.id,
+      scenarioVersion: scenario.version,
+      engineVersion: '0.1.0',
+      adapter: { name: 'fixture', version: '0', capabilities: [], observationPoints: [], limits: ['limite do adapter'] },
+      config: { scenarioId: scenario.id, scenarioVersion: scenario.version, mode, policy: 'delete-wins', seed: 1200, fault: 'none', stepMode: 'auto', timeoutMs: 3000 },
+      namespace: `rsd-${id}`,
+      entityId: 'item-17',
+      status: 'completed',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      verdict,
+    },
+  };
+}
+
+const vulnerable = () => new Trace().create().deleteG().confirm().absent().release('UPSERT_INSERTED', true).visible(1, 'delivery:dlv_1');
+const guarded = () => new Trace().create().deleteG().confirm().absent().release('REJECTED_DELETED', false).absent();
+
+describe('relatório', () => {
+  it('JSON e Markdown carregam o mesmo veredito, versão do cenário, semente e limites', () => {
+    const report = buildReport(detail('vulnerable', vulnerable()), new Date('2026-10-14T00:00:00Z'));
+    const md = renderMarkdown(report);
+    expect(report.verdict?.result).toBe('VIOLATION');
+    expect(md).toContain('**Resultado:** VIOLATION');
+    expect(md).toContain('`held-update-after-delete` v1.0.0');
+    expect(md).toContain('| Semente | 1200 |');
+    expect(md).toContain('limite do adapter');
+    expect(md).toContain('não prova correção em geral');
+    expect(report.reproduce.cli).toContain('--seed 1200');
+  });
+
+  it('o teste de regressão sugerido usa o mesmo cenário e semente no modo corrigido', () => {
+    const md = renderMarkdown(buildReport(detail('vulnerable', vulnerable())));
+    expect(md).toMatch(/getScenario\('held-update-after-delete'\)/);
+    expect(md).toMatch(/seed: 1200/);
+    expect(md).toMatch(/mode: 'guarded'/);
+  });
+});
+
+describe('comparação', () => {
+  it('aponta a mudança de resultado e as etapas que divergiram entre vulnerable e guarded', () => {
+    const cmp = compareRuns(detail('vulnerable', vulnerable()), detail('guarded', guarded()));
+    expect(cmp.comparable).toBe(true);
+    expect(cmp.resultChanged).toBe(true);
+    expect(cmp.base.result).toBe('VIOLATION');
+    expect(cmp.candidate.result).toBe('NO_VIOLATION_OBSERVED');
+    const changed = cmp.steps.filter((s) => s.changed).map((s) => s.stepId);
+    expect(changed).toEqual(['release-5', 'inspect-6']);
+  });
+
+  it('enquanto uma execução não termina, nada é marcado como diferente', () => {
+    const running = detail('guarded', new Trace().create().deleteG());
+    running.run.status = 'running';
+    delete running.run.verdict;
+    const cmp = compareRuns(detail('vulnerable', vulnerable()), running);
+    expect(cmp.comparable).toBe(false);
+    expect(cmp.resultChanged).toBe(false);
+    expect(cmp.steps.filter((s) => s.changed)).toEqual([]);
+  });
+
+  it('não chama de comparáveis execuções com sementes diferentes', () => {
+    const b = detail('guarded', guarded());
+    b.run.config = { ...b.run.config, seed: 7 };
+    const cmp = compareRuns(detail('vulnerable', vulnerable()), b);
+    expect(cmp.comparable).toBe(false);
+    expect(cmp.reasons).toContain('sementes diferentes');
+  });
+});
+
+describe('sanitize', () => {
+  it('mascara credenciais em string e preserva a autorização de política (objeto)', () => {
+    const out = sanitize({ headers: { Authorization: 'Bearer abc' }, apiKey: 'k', authorization: { actor: 'op', reason: 'r' } });
+    expect(out).toEqual({ headers: { Authorization: '[redacted]' }, apiKey: '[redacted]', authorization: { actor: 'op', reason: 'r' } });
+  });
+});
+
+describe('narrativa', () => {
+  it('um upsert relatado só ganha o tom de reaparecimento quando o veredito o associa a uma leitura', () => {
+    const t = new Trace().create().deleteG().confirm('pending').release('UPSERT_INSERTED', true).visible(1, 'delivery:dlv_1');
+    const inconclusive = evaluate({ policy: 'delete-wins', steps: t.steps });
+    expect(inconclusive.result).toBe('INCONCLUSIVE');
+    expect(describeStep(t.steps[3]!, inconclusive).tone).toBe('neutral');
+
+    const v = vulnerable();
+    const violation = evaluate({ policy: 'delete-wins', steps: v.steps });
+    expect(describeStep(v.steps[4]!, violation).tone).toBe('reappeared');
+  });
+});
