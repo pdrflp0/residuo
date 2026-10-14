@@ -140,18 +140,45 @@ function trimWav(file) {
   return writeFile(file, pcmToWav(Buffer.from(pcm.subarray(a * 2 * channels, (z + 1) * 2 * channels)), rate, channels));
 }
 
+/** Leva cada fala a ~-14 dBFS RMS (com pico limitado a 0,95) para a voz ficar no mesmo nível em qualquer motor. */
+function normalizeWav(file) {
+  const b = readFileSync(file);
+  let off = 12;
+  while (b.toString('ascii', off, off + 4) !== 'data') off += 8 + b.readUInt32LE(off + 4);
+  const start = off + 8;
+  const end = start + b.readUInt32LE(off + 4);
+  let sum = 0;
+  let n = 0;
+  let peak = 0;
+  for (let i = start; i < end; i += 2) {
+    const x = b.readInt16LE(i) / 32768;
+    peak = Math.max(peak, Math.abs(x));
+    if (Math.abs(x) > 0.01) {
+      sum += x * x;
+      n++;
+    }
+  }
+  if (!n) return;
+  const rmsDb = 10 * Math.log10(sum / n);
+  const gain = Math.min(10 ** ((-14 - rmsDb) / 20), 0.95 / peak);
+  for (let i = start; i < end; i += 2) b.writeInt16LE(Math.max(-32768, Math.min(32767, Math.round(b.readInt16LE(i) * gain))), i);
+  return writeFile(file, b);
+}
+
 const segments = [];
 for (const [i, seg] of SCRIPT.entries()) {
   const wav = `${outDir}${seg.id}.wav`;
   // ONLY=id1,id2 regenera só esses trechos e reaproveita os outros (economiza créditos)
   const only = process.env.ONLY?.split(',');
   if (only && !only.includes(seg.id) && existsSync(wav)) {
+    await normalizeWav(wav);
     segments.push({ id: seg.id, at: seg.at, duration: Number(wavDuration(wav).toFixed(3)), file: `audio/narration-${engine}/${seg.id}.wav` });
     continue;
   }
   if (engine === 'say') await synthSay(seg, wav);
   else await synthEleven(seg, wav, SCRIPT[i - 1], SCRIPT[i + 1]);
   await trimWav(wav);
+  await normalizeWav(wav);
   const dur = wavDuration(wav);
   segments.push({ id: seg.id, at: seg.at, duration: Number(dur.toFixed(3)), file: `audio/narration-${engine}/${seg.id}.wav` });
 }
