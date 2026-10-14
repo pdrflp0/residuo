@@ -1,0 +1,77 @@
+{
+  "$schema": "../../schema/residuo.schema.json",
+  "name": "notes-sync",
+  "version": "1.0.0",
+  "baseUrl": "http://127.0.0.1:4300",
+  "vars": { "strategy": "upsert" },
+  "isolation": {
+    "header": "x-tenant",
+    "setup": { "method": "POST", "path": "/__residuo/tenants", "body": { "tenant": "{{namespace}}", "strategy": "{{strategy}}" } },
+    "reset": { "method": "DELETE", "path": "/__residuo/tenants/{{namespace}}" }
+  },
+  "operations": {
+    "create": {
+      "method": "POST",
+      "path": "/notes",
+      "body": { "id": "{{entityId}}", "title": "{{data.title}}", "body": "{{data.note}}" },
+      "ok": [201],
+      "rejected": [409],
+      "facts": { "generation": "generation", "revision": "version", "opRef": "lastWrite" }
+    },
+    "prepareUpdate": {
+      "method": "POST",
+      "path": "/__residuo/client-queue",
+      "body": { "noteId": "{{entityId}}", "generation": "{{generation}}", "baseVersion": "{{baseRevision}}", "title": "{{data.title}}", "body": "{{data.note}}" },
+      "ok": [201],
+      "facts": { "deliveryId": "changeId" }
+    },
+    "hold": "implicit",
+    "release": {
+      "method": "POST",
+      "path": "/__residuo/client-queue/{{deliveryId}}/send",
+      "ok": [200],
+      "rejected": [409],
+      "facts": {
+        "writeOutcome": "result",
+        "wrote": { "path": "result", "in": ["recreated", "updated"] },
+        "generation": "note.generation",
+        "revision": "note.version",
+        "opRef": "note.lastWrite"
+      }
+    },
+    "redeliver": {
+      "method": "POST",
+      "path": "/__residuo/client-queue/{{deliveryId}}/resend",
+      "ok": [200],
+      "rejected": [409],
+      "facts": {
+        "writeOutcome": "result",
+        "wrote": { "path": "result", "in": ["recreated", "updated"] },
+        "generation": "note.generation",
+        "revision": "note.version",
+        "opRef": "note.lastWrite"
+      }
+    },
+    "delete": {
+      "method": "DELETE",
+      "path": "/notes/{{entityId}}",
+      "ok": [200],
+      "rejected": [404],
+      "facts": { "deletionId": "deletionId", "generation": "generation", "revision": "version" }
+    },
+    "confirmDeletion": {
+      "method": "GET",
+      "path": "/deletions/{{deletionId}}",
+      "ok": [200],
+      "facts": { "confirmed": { "path": "status", "equals": "effective" }, "confirmationStatus": "status" }
+    },
+    "inspect": {
+      "method": "GET",
+      "path": "/notes/{{entityId}}",
+      "absent": { "status": 404, "path": "code", "equals": "NOTE_NOT_FOUND" },
+      "facts": { "generation": "generation", "revision": "version", "lastWrittenBy": "lastWrite" }
+    }
+  },
+  "observationPoints": ["GET /notes/{id} — API pública do app"],
+  "limits": ["Isolamento por tenant de teste (cabeçalho x-tenant), criado pelos ganchos /__residuo."]
+}

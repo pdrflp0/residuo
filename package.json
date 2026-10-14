@@ -7,9 +7,11 @@
   "workspaces": [
     "packages/contracts",
     "packages/engine",
+    "packages/cli",
     "apps/reference-service",
     "apps/api",
-    "apps/web"
+    "apps/web",
+    "examples/notes-sync"
   ],
   "engines": {
     "node": ">=22.12"
@@ -18,11 +20,14 @@
     "db:up": "docker compose up -d --wait postgres",
     "db:down": "docker compose down",
     "dev": "concurrently -k -n ref,api,web -c magenta,cyan,green \"npm run dev -w @residuo/reference-service\" \"npm run dev -w @residuo/api\" \"npm run dev -w @residuo/web\"",
-    "lab": "tsx scripts/run-scenario.ts",
+    "lab": "node packages/cli/bin/residuo.mjs run --reference",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "build:web": "npm run build -w @residuo/web"
+    "build:web": "npm run build -w @residuo/web",
+    "residuo": "node packages/cli/bin/residuo.mjs",
+    "example:notes": "npm run start -w @residuo/example-notes-sync",
+    "schema": "node packages/cli/bin/residuo.mjs schema > schema/residuo.schema.json"
   },
   "devDependencies": {
     "@playwright/test": "1.64.0",

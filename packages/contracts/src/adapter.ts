@@ -6,7 +6,7 @@
  * uma capacidade, o adapter lança AdapterError('unsupported') e o engine registra a limitação
  * em vez de inventar o resultado.
  */
-import type { AdapterDescriptor, Fault, HttpExchange, Mode, StepFacts } from './domain';
+import type { AdapterDescriptor, Fault, HttpExchange, StepFacts, TargetMode } from './domain';
 
 export interface AdapterResult {
   exchange: HttpExchange;
@@ -28,7 +28,7 @@ export class AdapterError extends Error {
 
 export interface NamespaceSpec {
   namespace: string;
-  mode: Mode;
+  mode: TargetMode;
   fault: Fault;
 }
 

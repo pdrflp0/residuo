@@ -52,7 +52,10 @@ export function describeStep(o: StepObservation, verdict?: Verdict): StepNarrati
     case 'release':
     case 'replay': {
       const known = f.writeOutcome ? CONSUMER_OUTCOMES[f.writeOutcome] : undefined;
-      if (!known) return { tone: 'neutral', headline: `Consumidor respondeu ${f.writeOutcome ?? 'sem resultado'}.` };
+      if (!known) {
+        const wrote = f.wrote ? 'e relata que escreveu no registro' : 'sem escrever nada';
+        return { tone: isCause(o, verdict) ? 'reappeared' : f.wrote ? 'neutral' : 'conflict', headline: `Entrega processada: o alvo respondeu "${f.writeOutcome ?? '?'}" ${wrote}.` };
+      }
       // O tom de reaparecimento numa escrita só vem do veredito (leitura posterior que confirmou).
       return { tone: isCause(o, verdict) ? 'reappeared' : known.tone, headline: known.text(o) };
     }
@@ -62,7 +65,7 @@ export function describeStep(o: StepObservation, verdict?: Verdict): StepNarrati
         : { tone: 'conflict', headline: `Exclusão recusada (${f.writeOutcome ?? '?'}).` };
     case 'confirm-deletion':
       return f.confirmed
-        ? { tone: 'deleted', headline: `Exclusão em vigor (mecanismo: ${f.mechanism ?? '?'}).` }
+        ? { tone: 'deleted', headline: `Exclusão em vigor${f.mechanism ? ` (mecanismo: ${f.mechanism})` : ''}.` }
         : { tone: 'failure', headline: `Confirmação não obtida: o alvo informa "${f.confirmationStatus ?? '?'}".` };
     case 'restore':
       if (f.wrote && isCause(o, verdict)) {

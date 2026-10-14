@@ -1,0 +1,14 @@
+{
+  "name": "@residuo/example-notes-sync",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "App de exemplo: API de notas com sincronização offline, integrada ao Resíduo via residuo.json.",
+  "exports": { ".": "./src/server.ts" },
+  "scripts": {
+    "start": "RESIDUO_HOOKS=1 tsx src/main.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": { "pg": "8.23.1" },
+  "devDependencies": { "@types/pg": "8.23.1" }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "@residuo/cli",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "CLI do Resíduo: testa sistemas via residuo.json, para uso local e no CI.",
+  "bin": { "residuo": "./bin/residuo.mjs" },
+  "scripts": { "typecheck": "tsc -p tsconfig.json" },
+  "dependencies": {
+    "@residuo/contracts": "0.1.0",
+    "@residuo/engine": "0.1.0",
+    "tsx": "4.23.15",
+    "zod": "4.6.7"
+  }
+}

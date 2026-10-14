@@ -10,9 +10,12 @@
  */
 import { z } from 'zod';
 
+/** Modos do serviço de referência. */
 export const MODES = ['vulnerable', 'guarded'] as const;
 export const Mode = z.enum(MODES);
 export type Mode = z.infer<typeof Mode>;
+/** `external`: alvo de terceiros via residuo.json; o comportamento é o do próprio sistema testado. */
+export type TargetMode = Mode | 'external';
 
 /**
  * Política declarada pela aplicação testada.
@@ -176,7 +179,7 @@ export type RunConfigInput = z.input<typeof RunConfig>;
 export interface ResolvedRunConfig {
   scenarioId: string;
   scenarioVersion: string;
-  mode: Mode;
+  mode: TargetMode;
   policy: Policy;
   seed: number;
   fault: Fault;
@@ -243,8 +246,8 @@ export interface StepDiff {
 export interface RunComparison {
   comparable: boolean;
   reasons: string[];
-  base: { id: string; mode: Mode; result?: VerdictResult };
-  candidate: { id: string; mode: Mode; result?: VerdictResult };
+  base: { id: string; mode: TargetMode; result?: VerdictResult };
+  candidate: { id: string; mode: TargetMode; result?: VerdictResult };
   resultChanged: boolean;
   steps: StepDiff[];
 }

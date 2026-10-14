@@ -1,0 +1,90 @@
+{
+  "$schema": "../schema/residuo.schema.json",
+  "name": "reference-service",
+  "version": "0.1.0",
+  "baseUrl": "http://127.0.0.1:4100",
+  "vars": { "mode": "vulnerable", "fault": "none" },
+  "isolation": {
+    "setup": { "method": "POST", "path": "/namespaces", "body": { "namespace": "{{namespace}}", "mode": "{{mode}}", "fault": "{{fault}}" } },
+    "reset": { "method": "DELETE", "path": "/namespaces/{{namespace}}" }
+  },
+  "operations": {
+    "create": {
+      "method": "POST",
+      "path": "/ns/{{namespace}}/items",
+      "body": { "id": "{{entityId}}", "data": "{{data}}" },
+      "ok": [201],
+      "rejected": [409],
+      "facts": { "writeOutcome": "outcome", "generation": "item.generation", "revision": "item.revision", "opRef": "item.lastWrittenBy" }
+    },
+    "prepareUpdate": {
+      "method": "POST",
+      "path": "/ns/{{namespace}}/client/updates",
+      "body": { "id": "{{entityId}}", "generation": "{{generation}}", "baseRevision": "{{baseRevision}}", "data": "{{data}}" },
+      "ok": [201],
+      "facts": { "deliveryId": "deliveryId" }
+    },
+    "hold": { "method": "POST", "path": "/ns/{{namespace}}/deliveries/{{deliveryId}}/hold", "ok": [200] },
+    "release": {
+      "method": "POST",
+      "path": "/ns/{{namespace}}/deliveries/{{deliveryId}}/release",
+      "ok": [200],
+      "rejected": [409],
+      "facts": {
+        "writeOutcome": "consumer.outcome",
+        "wrote": "consumer.wrote",
+        "generation": "generation",
+        "revision": "consumer.item.revision",
+        "opRef": "consumer.item.lastWrittenBy"
+      }
+    },
+    "redeliver": {
+      "method": "POST",
+      "path": "/ns/{{namespace}}/deliveries/{{deliveryId}}/redeliver",
+      "ok": [200],
+      "rejected": [409],
+      "facts": {
+        "writeOutcome": "consumer.outcome",
+        "wrote": "consumer.wrote",
+        "generation": "generation",
+        "revision": "consumer.item.revision",
+        "opRef": "consumer.item.lastWrittenBy"
+      }
+    },
+    "delete": {
+      "method": "DELETE",
+      "path": "/ns/{{namespace}}/items/{{entityId}}?generation={{generation}}",
+      "ok": [200],
+      "rejected": [404, 409],
+      "facts": { "writeOutcome": "outcome", "deletionId": "deletion.deletionId", "generation": "deletion.generation", "revision": "deletion.revision" }
+    },
+    "confirmDeletion": {
+      "method": "GET",
+      "path": "/ns/{{namespace}}/deletions/{{deletionId}}",
+      "ok": [200],
+      "facts": { "confirmed": { "path": "status", "equals": "effective" }, "confirmationStatus": "status", "mechanism": "mechanism", "generation": "generation" }
+    },
+    "restore": {
+      "method": "POST",
+      "path": "/ns/{{namespace}}/items/{{entityId}}/restore",
+      "body": { "deletionId": "{{deletionId}}", "authorization": { "actor": "{{actor}}", "reason": "{{reason}}" } },
+      "ok": [200],
+      "rejected": [403, 409],
+      "facts": {
+        "writeOutcome": "outcome",
+        "actor": "authorization.actor",
+        "reason": "authorization.reason",
+        "generation": "item.generation",
+        "revision": "item.revision",
+        "opRef": "item.lastWrittenBy"
+      }
+    },
+    "inspect": {
+      "method": "GET",
+      "path": "/ns/{{namespace}}/items/{{entityId}}",
+      "absent": { "status": 404, "path": "outcome", "equals": "NOT_FOUND" },
+      "facts": { "generation": "item.generation", "revision": "item.revision", "lastWrittenBy": "item.lastWrittenBy" }
+    }
+  },
+  "observationPoints": ["GET /ns/{ns}/items/{id} — leitura pública do serviço de referência"]
+}

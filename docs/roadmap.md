@@ -1,15 +1,18 @@
 # Roadmap
 
-O nível 1 está implementado e verificado localmente (ver README, seção Testes). Os níveis seguintes **não foram iniciados**.
+Os níveis 1 e 2 estão implementados e verificados (ver README, seção Testes). O nível 3 **não foi iniciado**.
 
-## Nível 2 — usar no projeto de outro desenvolvedor
+## Nível 2 — usar no projeto de outro desenvolvedor (implementado)
 
-- Publicar o contrato do adapter como pacote, com um exemplo integrável (por exemplo, uma API Express/Nest com fila).
-- O adapter declara capacidades e pontos de observação; o relatório lista o que ficou sem cobertura.
-- Gerar variações de ordem de entrega e reduzir a sequência mínima que continua falhando (*shrinking*).
-- CLI com saída de máquina (JSON) e códigos de saída estáveis para CI. O `npm run lab` atual já devolve 0/1/2, mas não é um contrato público.
-- Política "abrir conflito para revisão": preservar a edição rejeitada para resolução humana, em vez de só rejeitá-la.
-- O runner roda na máquina do desenvolvedor, contra ambientes autorizados, com credenciais fora dos relatórios.
+- [x] Contrato declarativo `residuo.json` com JSON Schema ([docs/integracao.md](integracao.md))
+- [x] Adapter genérico, equivalente ao adapter escrito à mão (testado nos 4 cenários × 2 modos)
+- [x] CLI `residuo` (`check`, `run`, `explore`, `schema`) com saída JSON e códigos de saída para CI
+- [x] Exploração de 12 ordens de entrega com redução à menor sequência que ainda falha
+- [x] App de exemplo integrado ([examples/notes-sync](../examples/notes-sync))
+- [ ] Publicar a CLI no npm (exige build para JavaScript e conta no npm)
+- [ ] Política "abrir conflito para revisão": preservar a edição rejeitada para resolução humana
+- [ ] Interface web para alvos externos (hoje: CLI)
+- [ ] Integrar com um sistema real de outra pessoa e medir o esforço
 
 ## Nível 3 — recuperação e colaboração
 

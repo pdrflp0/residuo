@@ -6,7 +6,7 @@
 
 O Resíduo executa uma sequência controlada contra um serviço de teste real — criar um registro, guardar uma edição antiga, excluir, confirmar a exclusão e só então liberar a edição — e mostra, com evidência, se o registro voltou, em qual operação e se isso viola a política declarada. O resultado é um caso de bug reproduzível, com relatório exportável e um teste de regressão para acompanhar a correção.
 
-> Nível 1 · dados sintéticos de demonstração · alvo: serviço de referência local · ainda não validado com usuários.
+> Níveis 1 e 2 · dados sintéticos de demonstração · testa o serviço de referência ou o seu próprio sistema via `residuo.json` · ainda não validado com usuários externos.
 >
 > **Primeira vez aqui?** Leia [Entenda o Resíduo em 5 minutos](docs/entenda.md): o bug explicado com um exemplo do dia a dia e um glossário.
 
@@ -60,6 +60,20 @@ docker compose --profile full up --build   # http://localhost:4000
 
 **Sem Docker:** use qualquer PostgreSQL ≥ 14 (por exemplo `brew install postgresql@18`) e aponte as variáveis de [.env.example](.env.example) (`TARGET_DATABASE_URL`, `LAB_DATABASE_URL`). Os serviços criam os próprios bancos na primeira execução.
 
+## Testar o seu próprio sistema (nível 2)
+
+Descreva o seu sistema num `residuo.json`: como criar, editar, apagar e ler, e onde ficam os ganchos de teste que seguram e soltam uma entrega. Depois rode a CLI, local ou no CI:
+
+```bash
+npm run residuo -- check   --config residuo.json   # valida e mostra quais cenários o seu sistema suporta
+npm run residuo -- run     --config residuo.json   # 0 = ok · 1 = VIOLATION · 2 = INCONCLUSIVE
+npm run residuo -- explore --config residuo.json   # testa 12 ordens de entrega e reduz a falha à sequência mínima
+```
+
+O exemplo completo é o [examples/notes-sync](examples/notes-sync), uma API de notas com sincronização offline, outros nomes de campo e um bug ligável por tenant. Para ele, `explore` encontra 9 ordens que violam e reduz a falha a `exclusão → liberar edição 1`. O guia está em [docs/integracao.md](docs/integracao.md), e o schema do arquivo, para autocomplete, em [schema/residuo.schema.json](schema/residuo.schema.json).
+
+O mesmo formato descreve o serviço de referência ([examples/reference-service.residuo.json](examples/reference-service.residuo.json)). Um teste exige que o adapter genérico produza exatamente as mesmas etapas, os mesmos fatos e o mesmo veredito que o adapter escrito à mão, nos 4 cenários e nos 2 modos.
+
 ## Testes
 
 ```bash
@@ -81,6 +95,10 @@ npm run typecheck
 | Falha de infraestrutura (namespace sumido, banco do laboratório fora) não vira evidência nem culpa o alvo | [scenarios.integration.test.ts](apps/reference-service/test/scenarios.integration.test.ts) |
 | Evidência insuficiente (escrita sem leitura posterior, leitura sem visibilidade, exclusão sem geração) nunca passa | [evaluate.test.ts](packages/engine/test/evaluate.test.ts) |
 | A interface só pinta "reapareceu" o que o veredito sustenta | [entity-state.test.ts](apps/web/test/entity-state.test.ts) + [report.test.ts](packages/engine/test/report.test.ts) |
+| Adapter genérico (`residuo.json`) = adapter escrito à mão, em todos os cenários e modos | [config-adapter.integration.test.ts](tests/level2/config-adapter.integration.test.ts) |
+| Um sistema com outro formato de API (notes-sync) é testado só por configuração; capacidade ausente vira INCONCLUSIVE | idem |
+| `explore` acha as ordens que violam e reduz à mesma sequência mínima, independente da semente | idem |
+| CLI como processo real: códigos de saída, `--json`, relatórios, configuração inválida, recusa de alvo remoto, schema sincronizado | [cli.integration.test.ts](tests/level2/cli.integration.test.ts) |
 | Ponta a ponta: demo → evidência → causa → exportação idêntica à API → comparação | [e2e/demo.spec.ts](e2e/demo.spec.ts) |
 | Navegação por teclado e preferência por movimento reduzido | idem |
 
@@ -104,7 +122,9 @@ apps/web                React + Vite: bancada, linha do tempo, evidência, compa
 apps/api                NestJS: execuções, persistência (banco lab), relatórios, comparação
 apps/reference-service  NestJS: o alvo testado, modos vulnerable/guarded (banco target)
 packages/engine         orquestrador, avaliador de invariantes, adapter HTTP, relatórios
-packages/contracts      tipos e contrato do adapter compartilhados
+packages/contracts      tipos, contrato do adapter e schema do residuo.json
+packages/cli            CLI residuo: check, run, explore (nível 2)
+examples/notes-sync     app de exemplo integrado via residuo.json
 ```
 
 O avaliador e o alvo ficam em bancos separados: tudo o que o Resíduo sabe do alvo passa pela API HTTP do adapter. Detalhes em [docs/arquitetura.md](docs/arquitetura.md) e decisões em [docs/decisoes.md](docs/decisoes.md).
@@ -112,6 +132,7 @@ O avaliador e o alvo ficam em bancos separados: tudo o que o Resíduo sabe do al
 ## Documentos
 
 - [docs/entenda.md](docs/entenda.md) — o problema em linguagem simples e glossário
+- [docs/integracao.md](docs/integracao.md) — como testar o seu sistema: residuo.json, CLI, CI
 - [docs/arquitetura.md](docs/arquitetura.md) — componentes, fluxo de uma execução, modelo de dados
 - [docs/decisoes.md](docs/decisoes.md) — por que geração ≠ id, como a exclusão é confirmada, o que é observado, por que é reproduzível
 - [docs/demo.md](docs/demo.md) — roteiro de demonstração de 60 a 90 segundos
@@ -124,7 +145,9 @@ O avaliador e o alvo ficam em bancos separados: tudo o que o Resíduo sabe do al
 
 - Mede **visibilidade pela API de leitura do alvo**. Ausência numa leitura não é apagamento físico de todas as cópias (réplicas, caches, backups, logs).
 - A ordem é controlada por barreiras explícitas: a reexecução reproduz **este interleaving**, não a temporização de uma corrida real. A semente gera só os dados sintéticos; outras ordens de entrega não são exploradas (nível 2).
-- O v1 aceita somente o serviço de referência local; não há campo para testar URLs arbitrárias.
+- A interface web testa só o serviço de referência. Sistemas de terceiros são testados pela CLI, que por padrão recusa alvos fora de `localhost` (`--allow-remote` existe para ambientes de teste autorizados).
+- Integrar exige trabalho do lado do sistema testado: mapear operações e oferecer ganchos de teste para segurar e soltar entregas. Não é automático.
+- `explore` cobre 12 ordens de um conjunto pequeno de ações, e não todas as concorrências possíveis.
 - A política "abrir conflito para revisão humana" não está implementada: no modo `guarded`, a edição conflitante é rejeitada com resultado explícito.
 - Não é certificação de privacidade, conformidade legal nem exclusão criptograficamente comprovada.
 - Ainda não foi usado por desenvolvedores além do autor; utilidade e esforço de integração não estão validados.
@@ -144,5 +167,7 @@ O avaliador e o alvo ficam em bancos separados: tudo o que o Resíduo sabe do al
 The reference service has two modes: `vulnerable` (an upsert consumer resurrects the deleted generation) and `guarded` (inbox de-duplication, a per-identity row lock, a tombstone keyed by *(id, generation)*, and base-revision checks; every rejection is explicit). Identity is separated from **generation**, so an explicitly re-created record (g2) is not mistaken for the deleted one (g1) coming back.
 
 Stack: TypeScript, NestJS 12, React 19 + Vite, PostgreSQL 18, Vitest, Playwright. Runs are isolated by namespace; ordering is enforced by explicit barriers (each adapter call returns only after the target finished), not sleeps. Reports export as JSON and Markdown, including a suggested regression test.
+
+Level 2 lets anyone test their own system: describe it in a `residuo.json` (operations, fact extraction, test hooks to hold/release deliveries) and run the `residuo` CLI (`check`, `run`, `explore`) locally or in CI, with exit codes 0/1/2. `explore` runs 12 delivery orders and shrinks a failure to the minimal reproducing sequence. A generic-adapter parity test proves the config-driven adapter matches the hand-written one.
 
 Run it: `npm install && npm run db:up && npm run dev`, then open http://localhost:5173. Limits: it measures visibility through the target's read API only, replays one controlled interleaving (not real-time races), and targets only the local reference service in v1.
