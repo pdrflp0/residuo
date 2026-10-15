@@ -1,6 +1,6 @@
 # Roadmap
 
-Os níveis 1, 2 e 3 (parte escolhida) estão implementados e verificados (ver README, seção Testes).
+Os níveis 1, 2 e 3 estão implementados e verificados (ver README, seção Testes). Do nível 3, fica de fora só o que depende de outras pessoas (pilotos).
 
 ## Nível 2 — usar no projeto de outro desenvolvedor (implementado)
 
@@ -14,13 +14,13 @@ Os níveis 1, 2 e 3 (parte escolhida) estão implementados e verificados (ver RE
 - [ ] Interface web para alvos externos (hoje: CLI)
 - [ ] Integrar com um sistema real de outra pessoa e medir o esforço
 
-## Nível 3 — recuperação e colaboração (parte implementada)
+## Nível 3 — recuperação e colaboração (implementado, exceto pilotos)
 
 - [x] Restauração de backup: cenário `backup-restore-after-delete`; correção que reaplica o registro de exclusões
 - [x] Dados derivados: cenário `derived-data-after-delete`; vários pontos de leitura e atribuição "dado derivado não invalidado"
 - [x] Relatório HTML compartilhável (arquivo único, sem recursos externos)
-- [ ] Mais clientes concorrentes na exploração de ordens
-- [ ] Resumo de execução com IA, citando as etapas usadas como evidência
+- [x] Mais clientes concorrentes na exploração de ordens (`--clients 1..4`, até 360 ordens)
+- [x] Resumo de execução com IA, citando as etapas usadas como evidência (opcional; conferido por código, nunca decide o veredito)
 - [ ] Pilotos com outros desenvolvedores e coleta de feedback
 
 ### Ideias originais do nível 3
@@ -47,8 +47,10 @@ Feito em 14/10/2026:
 - [x] CI no GitHub Actions (typecheck, testes com Postgres, ponta a ponta com Playwright), verde no primeiro envio
 - [x] Vídeo de apresentação de 79 s ([docs/media/residuo-intro.mp4](media/residuo-intro.mp4)), gerado por código a partir de capturas reais
 
+- [x] Vídeo do nível 3 (76 s, narrado) ([docs/media/residuo-nivel3.mp4](media/residuo-nivel3.mp4)), também a partir de capturas reais
+- [x] Post no LinkedIn com o vídeo (publicado pelo Pedro)
+- [x] Currículo atualizado, citando só capacidades demonstráveis
+
 Pendente (decisão do Pedro):
 
-- [ ] Publicar o post no LinkedIn com o vídeo
-- [ ] Atualizar o currículo, citando só capacidades demonstráveis
 - [ ] Opcional: demo online (exige hospedagem com Postgres, proteção contra abuso e custo)

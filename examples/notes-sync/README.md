@@ -17,4 +17,5 @@ npm run residuo -- check   --config examples/notes-sync/residuo.json
 npm run residuo -- run     --config examples/notes-sync/residuo.json         # upsert: VIOLATION (sai com 1)
 npm run residuo -- run     --config examples/notes-sync/residuo.json --var strategy=tombstone   # sai com 0
 npm run residuo -- explore --config examples/notes-sync/residuo.json         # menor sequência: exclusão → liberar edição 1
+npm run residuo -- explore --config examples/notes-sync/residuo.json --clients 3 --var strategy=tombstone   # 60 ordens, nenhuma viola
 ```

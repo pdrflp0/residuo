@@ -93,6 +93,23 @@ describe('exploração de ordens de entrega', () => {
     expect(r.minimal).toBeUndefined();
   });
 
+  it('3 clientes, upsert: 60 ordens e a mesma sequência mínima', async () => {
+    const r = await exploreOrders({ adapter: notesAdapter('upsert'), mode: 'external', seed: 1, clients: 3, namespacePrefix: ns('exp') });
+    expect(r.totalOrders).toBe(60);
+    expect(r.explored).toHaveLength(60);
+    expect(r.minimal?.order).toEqual(['delete', 'release-1']);
+  });
+
+  it('3 clientes, tombstone: nenhuma das 60 ordens viola; as edições concorrentes são recusadas por revisão', async () => {
+    const r = await exploreOrders({ adapter: notesAdapter('tombstone'), mode: 'external', seed: 1, clients: 3, namespacePrefix: ns('exp') });
+    expect(r.explored).toHaveLength(60);
+    expect(r.violations).toEqual([]);
+    expect(r.inconclusive).toEqual([]);
+    // antes da exclusão, só a primeira edição entregue é aceita; as outras partiram da mesma revisão e ficaram velhas
+    const beforeDelete = r.explored.find((x) => x.order.join('>') === 'release-1>release-2>release-3>delete>replay-1')!;
+    expect(beforeDelete.steps.filter((s) => s.kind === 'release').map((s) => s.facts.writeOutcome)).toEqual(['updated', 'rejected', 'rejected']);
+  });
+
   it('o orçamento limita as ordens e a semente decide quais (reprodutível)', async () => {
     const a = await exploreOrders({ adapter: notesAdapter('tombstone'), mode: 'external', seed: 7, budget: 4, namespacePrefix: ns('exp') });
     const b = await exploreOrders({ adapter: notesAdapter('tombstone'), mode: 'external', seed: 7, budget: 4, namespacePrefix: ns('exp') });

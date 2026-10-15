@@ -1,9 +1,9 @@
 /**
- * Exploração de ordens de entrega (nível 2).
+ * Exploração de ordens de entrega (nível 2; vários clientes no nível 3).
  *
  * Em vez de uma ordem fixa, gera as ordens válidas para um pequeno conjunto de ações —
- * excluir (com confirmação), liberar a edição 1, liberar a edição 2, reentregar a edição 1 —
- * e executa cada uma contra o alvo. Quando uma ordem viola o invariante, reduz a sequência
+ * excluir (com confirmação), liberar a edição de cada cliente offline (todas feitas sobre a
+ * mesma revisão), reentregar a edição 1 — e executa cada uma contra o alvo. Quando uma ordem viola o invariante, reduz a sequência
  * removendo ações enquanto a violação continuar acontecendo (minimização gulosa, "1-mínima").
  *
  * Cada ordem é executada de forma determinística (barreiras). A semente só escolhe a ordem de
@@ -15,8 +15,26 @@ import { executeScenario } from './execute';
 import type { Scenario, ScenarioStep } from './scenarios';
 import { mulberry32 } from './seed';
 
-export const EXPLORE_ACTIONS = ['delete', 'release-1', 'release-2', 'replay-1'] as const;
-export type ExploreAction = (typeof EXPLORE_ACTIONS)[number];
+export type ExploreAction = 'delete' | `release-${number}` | `replay-${number}`;
+
+/** Acima disso o número de ordens explode: (clientes + 2)! / 2 — com 4 clientes, 360. */
+export const MAX_CLIENTS = 4;
+
+/** Ações para `clients` clientes offline: exclusão, uma entrega por cliente e, se houver, a reentrega da edição 1. */
+export function exploreActions(clients = 2, opts: { replay?: boolean } = {}): ExploreAction[] {
+  if (!Number.isInteger(clients) || clients < 1 || clients > MAX_CLIENTS) {
+    throw new RangeError(`clientes deve ser um inteiro entre 1 e ${MAX_CLIENTS}`);
+  }
+  const actions: ExploreAction[] = ['delete'];
+  for (let k = 1; k <= clients; k++) actions.push(`release-${k}`);
+  if (opts.replay ?? true) actions.push('replay-1');
+  return actions;
+}
+
+/** Conjunto padrão (2 clientes + reentrega): 12 ordens. */
+export const EXPLORE_ACTIONS: readonly ExploreAction[] = exploreActions(2);
+
+const clientOf = (a: ExploreAction) => Number(a.split('-')[1]);
 
 export interface OrderRun {
   order: ExploreAction[];
@@ -34,7 +52,9 @@ export interface ExploreOptions {
   timeoutMs?: number;
   /** máximo de ordens a executar (padrão: todas) */
   budget?: number;
-  /** ações disponíveis; padrão: todas as que o adapter suporta */
+  /** clientes offline com uma edição pendente cada (1 a MAX_CLIENTS; padrão 2) */
+  clients?: number;
+  /** ações disponíveis; padrão: as de `clients`, menos a reentrega se o adapter não a suporta */
   actions?: ExploreAction[];
   namespacePrefix: string;
   onRun?: (run: OrderRun, index: number) => void | Promise<void>;
@@ -49,19 +69,13 @@ export interface ExploreResult {
   minimal?: OrderRun;
 }
 
-const LABEL: Record<ExploreAction, string> = {
-  delete: 'exclusão',
-  'release-1': 'edição 1',
-  'release-2': 'edição 2',
-  'replay-1': 'reentrega 1',
-};
+const label = (a: ExploreAction) => (a === 'delete' ? 'exclusão' : a.startsWith('replay') ? `reentrega ${clientOf(a)}` : `edição ${clientOf(a)}`);
 
+/** Válida: tem exclusão, não repete ação e cada reentrega vem depois da primeira entrega da mesma edição. */
 export function isValidOrder(order: readonly ExploreAction[]): boolean {
   if (!order.includes('delete')) return false;
   if (new Set(order).size !== order.length) return false;
-  const r1 = order.indexOf('release-1');
-  const p1 = order.indexOf('replay-1');
-  return p1 === -1 || (r1 !== -1 && r1 < p1);
+  return order.every((a, i) => !a.startsWith('replay') || order.slice(0, i).includes(`release-${clientOf(a)}`));
 }
 
 export function allOrders(actions: readonly ExploreAction[]): ExploreAction[][] {
@@ -88,7 +102,7 @@ const step = (id: string, kind: StepKind, lane: Lane, title: string, params?: Sc
 
 /** Monta um cenário a partir de uma ordem de ações. Depois da exclusão, toda ação é seguida de uma leitura. */
 export function scenarioForOrder(order: readonly ExploreAction[]): Scenario {
-  const updates = [...new Set(order.filter((a) => a !== 'delete').map((a) => Number(a.split('-')[1])))].sort();
+  const updates = [...new Set(order.filter((a) => a !== 'delete').map(clientOf))].sort((a, b) => a - b);
   const steps: ScenarioStep[] = [step('create', 'create', 'api', 'Criar registro')];
   for (const n of updates) {
     steps.push(step(`prepare-${n}`, 'prepare-update', 'client', `Preparar edição ${n}`));
@@ -101,16 +115,16 @@ export function scenarioForOrder(order: readonly ExploreAction[]): Scenario {
       steps.push(step('confirm', 'confirm-deletion', 'api', 'Confirmar exclusão', { deletion: 'delete' }));
       deleted = true;
     } else {
-      const n = a.split('-')[1];
+      const n = clientOf(a);
       const kind: StepKind = a.startsWith('replay') ? 'replay' : 'release';
       steps.push(step(a, kind, 'consumer', kind === 'replay' ? `Reentregar edição ${n}` : `Liberar edição ${n}`, { delivery: `prepare-${n}` }));
     }
-    if (deleted) steps.push(step(`inspect-after-${a}`, 'inspect', 'observer', `Ler após ${LABEL[a]}`));
+    if (deleted) steps.push(step(`inspect-after-${a}`, 'inspect', 'observer', `Ler após ${label(a)}`));
   }
   return {
     id: `explore:${order.join('>')}`,
     version: 'explore-1',
-    title: `Ordem explorada: ${order.map((a) => LABEL[a]).join(' → ')}`,
+    title: `Ordem explorada: ${order.map(label).join(' → ')}`,
     summary: 'Cenário gerado pela exploração de ordens de entrega.',
     defaultPolicy: 'delete-wins',
     story: [],
@@ -120,7 +134,7 @@ export function scenarioForOrder(order: readonly ExploreAction[]): Scenario {
 
 export async function exploreOrders(opts: ExploreOptions): Promise<ExploreResult> {
   const caps = opts.adapter.describe().capabilities;
-  const supported = (opts.actions ?? [...EXPLORE_ACTIONS]).filter((a) => a !== 'replay-1' || caps.includes('redeliver'));
+  const supported = (opts.actions ?? exploreActions(opts.clients ?? 2)).filter((a) => !a.startsWith('replay') || caps.includes('redeliver'));
   const orders = allOrders(supported);
 
   // a semente decide a ordem de visita (relevante só quando o orçamento corta a lista)
@@ -165,7 +179,11 @@ export async function exploreOrders(opts: ExploreOptions): Promise<ExploreResult
   return { totalOrders: orders.length, explored, violations, inconclusive, ...(minimal ? { minimal } : {}) };
 }
 
-const REMOVAL_PREFERENCE: ExploreAction[] = ['replay-1', 'release-2', 'release-1'];
+/** Preferência fixa de remoção: reentregas, depois entregas do último cliente para o primeiro. */
+function removalPreference(order: readonly ExploreAction[]): ExploreAction[] {
+  const rank = (a: ExploreAction) => (a.startsWith('replay') ? 1000 : 0) + clientOf(a);
+  return order.filter((a) => a !== 'delete').sort((a, b) => rank(b) - rank(a));
+}
 
 /** Remove ações uma a uma enquanto a violação persistir. A exclusão nunca sai (sem ela não há o que vigiar). */
 async function shrink(start: OrderRun, runOrder: (o: ExploreAction[]) => Promise<OrderRun>): Promise<OrderRun> {
@@ -174,7 +192,7 @@ async function shrink(start: OrderRun, runOrder: (o: ExploreAction[]) => Promise
   while (progress) {
     progress = false;
     // preferência fixa de remoção: o resultado não depende da semente
-    for (const a of REMOVAL_PREFERENCE.filter((x) => best.order.includes(x))) {
+    for (const a of removalPreference(best.order)) {
       const candidate = best.order.filter((x) => x !== a);
       if (!isValidOrder(candidate)) continue;
       const run = await runOrder(candidate);

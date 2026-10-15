@@ -6,14 +6,19 @@
   "description": "Vídeo de apresentação do Resíduo, feito em código com Remotion.",
   "scripts": {
     "capture": "node scripts/capture.mjs",
-    "music": "node scripts/music.mjs",
+    "capture:l3": "node scripts/capture-l3.mjs",
+    "music": "node scripts/music.mjs intro",
+    "music:l3": "node scripts/music.mjs l3",
     "narration:say": "node scripts/narration.mjs say",
     "narration:elevenlabs": "node scripts/narration.mjs elevenlabs",
+    "narration:l3": "node scripts/narration.mjs elevenlabs l3",
     "studio": "remotion studio src/index.ts",
     "still": "remotion still src/index.ts ResiduoIntro",
     "render": "remotion render src/index.ts ResiduoIntro out/residuo-intro.mp4 --codec h264 --crf 18",
     "render:narrado": "remotion render src/index.ts ResiduoIntroNarrado out/residuo-intro-narrado.mp4 --codec h264 --crf 18",
     "render:elevenlabs": "remotion render src/index.ts ResiduoIntroElevenLabs out/residuo-intro-elevenlabs.mp4 --codec h264 --crf 18",
+    "render:l3": "remotion render src/index.ts ResiduoNivel3 out/residuo-nivel3.mp4 --codec h264 --crf 18",
+    "render:l3:elevenlabs": "remotion render src/index.ts ResiduoNivel3ElevenLabs out/residuo-nivel3-elevenlabs.mp4 --codec h264 --crf 18",
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {

@@ -18,3 +18,6 @@ Variações rápidas para entrevista:
 - **Política importa**: "Restauração autorizada" com `explicit-restore` → `POLICY_ALLOWED`; com `delete-wins` → `VIOLATION`.
 - **Sem evidência não há aprovação**: opções avançadas → "confirmação nunca fica efetiva" → `INCONCLUSIVE`, mesmo com o registro visível.
 - **Barreira real**: marque "Avançar etapa por etapa" e libere a edição você mesmo.
+- **Backup e cache (nível 3)**: "Backup restaurado" e "Cache e busca" no modo vulnerável → `VIOLATION` com a causa certa; no protegido, as exclusões são reaplicadas e os derivados invalidados.
+- **IA que não decide (nível 3)**: com `ANTHROPIC_API_KEY` na API, clique em **Gerar resumo** e depois numa citação "etapa N" ("cada frase aponta para a evidência; se o modelo contradisser o veredito, o resumo é descartado").
+- **Mais clientes**: `npm run residuo -- explore --config examples/notes-sync/residuo.json --clients 3` → 60 ordens, mesma sequência mínima.

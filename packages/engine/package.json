@@ -7,6 +7,11 @@
     ".": "./src/index.ts",
     "./narrative": "./src/narrative.ts"
   },
-  "scripts": { "typecheck": "tsc -p tsconfig.json" },
-  "dependencies": { "@residuo/contracts": "0.1.0" }
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "0.130.0",
+    "@residuo/contracts": "0.1.0"
+  }
 }

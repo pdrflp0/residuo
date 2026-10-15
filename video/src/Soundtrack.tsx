@@ -15,10 +15,14 @@ const MUSIC_UNDER_VOICE = 0.38;
 const MUSIC_DUCKED = 0.13;
 const RAMP = 0.3; // segundos
 
-/** Trilha original + narração opcional. A música abaixa durante as falas. */
-export function Soundtrack({ voice }: { voice: Voice }) {
+/**
+ * Trilha original + narração opcional. A música abaixa durante as falas.
+ * `video` escolhe a trilha e o roteiro: o de apresentação (intro) ou o do nível 3 (l3).
+ */
+export function Soundtrack({ voice, video = 'intro' }: { voice: Voice; video?: 'intro' | 'l3' }) {
   const { fps } = useVideoConfig();
-  const segments: Segment[] = voice === 'none' ? [] : (manifest as Record<string, Segment[]>)[voice] ?? [];
+  const key = video === 'l3' ? `l3-${voice}` : voice;
+  const segments: Segment[] = voice === 'none' ? [] : ((manifest as Record<string, Segment[]>)[key] ?? []);
 
   const musicVolume = (frame: number) => {
     if (segments.length === 0) return MUSIC_ALONE;
@@ -35,7 +39,7 @@ export function Soundtrack({ voice }: { voice: Voice }) {
 
   return (
     <>
-      <Audio src={staticFile('audio/music.wav')} volume={musicVolume} />
+      <Audio src={staticFile(video === 'l3' ? 'audio/music-l3.wav' : 'audio/music.wav')} volume={musicVolume} />
       {segments.map((s) => (
         <Sequence key={s.id} from={Math.round(s.at * fps)} durationInFrames={Math.ceil(s.duration * fps) + 3} layout="none">
           <Audio src={staticFile(s.file)} volume={1} />

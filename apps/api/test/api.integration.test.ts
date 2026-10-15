@@ -2,7 +2,7 @@
  * API real (Nest + Postgres lab) contra o serviço de referência real (Nest + Postgres target).
  */
 import type { AddressInfo } from 'node:net';
-import type { ReportV1, Run, RunComparison, RunDetail } from '@residuo/contracts';
+import type { AiSummary, ReportV1, Run, RunComparison, RunDetail } from '@residuo/contracts';
 import { createReferenceApp } from '@residuo/reference-service';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createApiApp } from '../src/app';
@@ -153,5 +153,91 @@ describe('API de execuções', () => {
     // a evidência gravada no laboratório continua disponível
     const d = await call<RunDetail>('GET', `/runs/${created.body.id}`);
     expect(d.body.steps).toHaveLength(9);
+  });
+});
+
+/**
+ * Modelo simulado: responde no formato da API de mensagens, montando o resumo a partir do relatório
+ * recebido (cita a leitura da violação e a causa). Conta as chamadas para testar cache e deduplicação.
+ */
+function fakeClaude(override?: Partial<Record<string, unknown>>) {
+  const state = { calls: 0, lastBody: undefined as any };
+  const fetch = (async (_url: string | URL, init?: RequestInit) => {
+    state.calls++;
+    state.lastBody = JSON.parse(String(init?.body));
+    const content: string = state.lastBody.messages[0].content;
+    const input = JSON.parse(content.slice(content.indexOf('<relatorio>') + 11, content.indexOf('</relatorio>')));
+    const v = input.verdict.violations[0];
+    const out = {
+      verdict: input.verdict.result,
+      headline: 'A edição retida recriou o registro depois da exclusão confirmada.',
+      findings: [{ text: 'O consumidor fez upsert e a leitura seguinte viu a geração excluída.', steps: [v.causedBySeq, v.observedAtSeq] }],
+      nextSteps: [],
+      ...override,
+    };
+    const message = { id: 'msg_x', type: 'message', role: 'assistant', model: 'claude-opus-5-5', content: [{ type: 'text', text: JSON.stringify(out) }], stop_reason: 'end_turn', stop_sequence: null, usage: { input_tokens: 10, output_tokens: 5 } };
+    return new Response(JSON.stringify(message), { status: 200, headers: { 'content-type': 'application/json' } });
+  }) as typeof globalThis.fetch;
+  return { state, fetch };
+}
+
+describe('resumo com IA (opcional)', () => {
+  it('sem chave: /about mostra desligado e o pedido responde 503 explicando como ligar', async () => {
+    const about = await call<{ ai: { enabled: boolean } }>('GET', '/about');
+    expect(about.body.ai.enabled).toBe(false);
+    const created = await call<Run>('POST', '/runs', { scenarioId: 'held-update-after-delete', mode: 'vulnerable' });
+    await until(created.body.id, finished);
+    const r = await call<{ message: string }>('POST', `/runs/${created.body.id}/summary`);
+    expect(r.status).toBe(503);
+    expect(r.body.message).toContain('ANTHROPIC_API_KEY');
+  });
+
+  it('com chave: gera, confere, salva e aparece no detalhe e nos relatórios; não muda o veredito', async () => {
+    const claude = fakeClaude();
+    const app = await createApiApp({ databaseUrl: LAB_DB, referenceServiceUrl: 'http://127.0.0.1:1', logger: false, ai: { apiKey: 'test-key', fetch: claude.fetch } });
+    await app.listen(0, '127.0.0.1');
+    const other = `http://127.0.0.1:${(app.getHttpServer().address() as AddressInfo).port}/api`;
+    try {
+      // a execução vem da API principal (com alvo); a segunda instância só lê o mesmo laboratório
+      const created = await call<Run>('POST', '/runs', { scenarioId: 'held-update-after-delete', mode: 'vulnerable' });
+      const before = await until(created.body.id, finished);
+
+      const [a, b] = await Promise.all([1, 2].map(() => fetch(`${other}/runs/${created.body.id}/summary`, { method: 'POST' }).then(async (r) => ({ status: r.status, body: (await r.json()) as AiSummary }))));
+      expect([a!.status, b!.status]).toEqual([200, 200]);
+      expect(claude.state.calls).toBe(1); // pedidos simultâneos compartilham uma chamada
+      expect(a!.body).toMatchObject({ runId: created.body.id, verdict: 'VIOLATION', findings: [{ steps: [8, 9] }] });
+
+      // já salvo: não chama de novo; refresh=1 chama
+      await fetch(`${other}/runs/${created.body.id}/summary`, { method: 'POST' });
+      expect(claude.state.calls).toBe(1);
+      await fetch(`${other}/runs/${created.body.id}/summary?refresh=1`, { method: 'POST' });
+      expect(claude.state.calls).toBe(2);
+
+      const d = await call<RunDetail>('GET', `/runs/${created.body.id}`);
+      expect(d.body.aiSummary?.headline).toBe('A edição retida recriou o registro depois da exclusão confirmada.');
+      expect(d.body.run.verdict).toEqual(before.run.verdict);
+      expect((await call<ReportV1>('GET', `/runs/${created.body.id}/report.json`)).body.aiSummary?.findings[0]?.steps).toEqual([8, 9]);
+      expect((await call<string>('GET', `/runs/${created.body.id}/report.md`)).text).toContain('## Resumo gerado por IA');
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('resumo que contradiz o veredito é descartado (502) e nada é salvo', async () => {
+    const claude = fakeClaude({ verdict: 'NO_VIOLATION_OBSERVED' });
+    const app = await createApiApp({ databaseUrl: LAB_DB, referenceServiceUrl: 'http://127.0.0.1:1', logger: false, ai: { apiKey: 'test-key', fetch: claude.fetch } });
+    await app.listen(0, '127.0.0.1');
+    const other = `http://127.0.0.1:${(app.getHttpServer().address() as AddressInfo).port}/api`;
+    try {
+      const created = await call<Run>('POST', '/runs', { scenarioId: 'held-update-after-delete', mode: 'vulnerable' });
+      await until(created.body.id, finished);
+      const r = await fetch(`${other}/runs/${created.body.id}/summary`, { method: 'POST' });
+      expect(r.status).toBe(502);
+      const body = (await r.json()) as { message: string; problems: string[] };
+      expect(body.problems).toContain('o resumo diz NO_VIOLATION_OBSERVED, mas o veredito do avaliador é VIOLATION');
+      expect((await call<RunDetail>('GET', `/runs/${created.body.id}`)).body.aiSummary).toBeUndefined();
+    } finally {
+      await app.close();
+    }
   });
 });

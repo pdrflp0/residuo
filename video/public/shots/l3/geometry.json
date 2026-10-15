@@ -1,0 +1,573 @@
+{
+  "backup": {
+    "runId": "run_ef2e24e26d",
+    "guardedId": "run_2853ef5c50",
+    "steps": 8,
+    "verdict": {
+      "result": "VIOLATION",
+      "summary": "A geração g1 de item-17, excluída e confirmada na etapa 5, voltou a ficar visível na etapa 8. O alvo informa que a última escrita veio de \"Restaurar o backup\" (etapa 7, resultado SNAPSHOT_RESTORED).",
+      "allowances": [],
+      "violations": [
+        {
+          "entityId": "item-17",
+          "invariant": "deleted-generation-stays-gone",
+          "generation": 1,
+          "attribution": "provenance",
+          "causedBySeq": 7,
+          "explanation": "A geração g1 de item-17, excluída e confirmada na etapa 5, voltou a ficar visível na etapa 8. O alvo informa que a última escrita veio de \"Restaurar o backup\" (etapa 7, resultado SNAPSHOT_RESTORED).",
+          "evidenceSeqs": [
+            4,
+            5,
+            7,
+            8
+          ],
+          "observedAtSeq": 8
+        }
+      ],
+      "checkedPoints": [
+        {
+          "seq": 3,
+          "stepId": "inspect-before",
+          "visible": true,
+          "afterConfirmation": false,
+          "observedGeneration": 1
+        },
+        {
+          "seq": 6,
+          "stepId": "inspect-deleted",
+          "visible": false,
+          "afterConfirmation": true
+        },
+        {
+          "seq": 8,
+          "stepId": "inspect-after",
+          "visible": true,
+          "afterConfirmation": true,
+          "observedGeneration": 1
+        }
+      ],
+      "confirmationSeq": 5,
+      "deletedGeneration": 1,
+      "inconclusiveReasons": []
+    },
+    "guardedVerdict": {
+      "result": "NO_VIOLATION_OBSERVED",
+      "summary": "Nenhuma violação observada nas 2 leitura(s) feitas após a confirmação. Isso vale para esta sequência e estes pontos de observação; não prova correção em geral.",
+      "allowances": [],
+      "violations": [],
+      "checkedPoints": [
+        {
+          "seq": 3,
+          "stepId": "inspect-before",
+          "visible": true,
+          "afterConfirmation": false,
+          "observedGeneration": 1
+        },
+        {
+          "seq": 6,
+          "stepId": "inspect-deleted",
+          "visible": false,
+          "afterConfirmation": true
+        },
+        {
+          "seq": 8,
+          "stepId": "inspect-after",
+          "visible": false,
+          "afterConfirmation": true
+        }
+      ],
+      "confirmationSeq": 5,
+      "deletedGeneration": 1,
+      "inconclusiveReasons": []
+    },
+    "bench": {
+      "w": 1276,
+      "h": 600.21875,
+      "nodes": {
+        "1": {
+          "x": 174,
+          "y": 264.96875,
+          "w": 126,
+          "h": 64
+        },
+        "2": {
+          "x": 310,
+          "y": 371.171875,
+          "w": 126,
+          "h": 70.3125
+        },
+        "3": {
+          "x": 446,
+          "y": 473.421875,
+          "w": 126,
+          "h": 71.09375
+        },
+        "4": {
+          "x": 582,
+          "y": 261.421875,
+          "w": 126,
+          "h": 71.09375
+        },
+        "5": {
+          "x": 718,
+          "y": 254,
+          "w": 126,
+          "h": 85.9375
+        },
+        "6": {
+          "x": 854,
+          "y": 473.421875,
+          "w": 126,
+          "h": 71.09375
+        },
+        "7": {
+          "x": 990,
+          "y": 355.9375,
+          "w": 126,
+          "h": 100.78125
+        },
+        "8": {
+          "x": 1126,
+          "y": 473.421875,
+          "w": 126,
+          "h": 71.09375
+        }
+      },
+      "watched": {
+        "x": 849,
+        "y": 246,
+        "w": 408,
+        "h": 333.21875
+      }
+    },
+    "seqs": {
+      "create": 1,
+      "snapshot": 2,
+      "inspect-before": 3,
+      "delete": 4,
+      "confirm": 5,
+      "inspect-deleted": 6,
+      "restore-snapshot": 7,
+      "inspect-after": 8
+    },
+    "guardedFacts": {
+      "create": {
+        "seq": 1,
+        "status": "ok",
+        "writeOutcome": "CREATED",
+        "reappliedDeletions": null,
+        "visible": null,
+        "point": null
+      },
+      "snapshot": {
+        "seq": 2,
+        "status": "ok",
+        "writeOutcome": "SNAPSHOT_TAKEN",
+        "reappliedDeletions": null,
+        "visible": null,
+        "point": null
+      },
+      "inspect-before": {
+        "seq": 3,
+        "status": "ok",
+        "writeOutcome": null,
+        "reappliedDeletions": null,
+        "visible": true,
+        "point": null
+      },
+      "delete": {
+        "seq": 4,
+        "status": "ok",
+        "writeOutcome": "DELETED",
+        "reappliedDeletions": null,
+        "visible": null,
+        "point": null
+      },
+      "confirm": {
+        "seq": 5,
+        "status": "ok",
+        "writeOutcome": null,
+        "reappliedDeletions": null,
+        "visible": null,
+        "point": null
+      },
+      "inspect-deleted": {
+        "seq": 6,
+        "status": "ok",
+        "writeOutcome": null,
+        "reappliedDeletions": null,
+        "visible": false,
+        "point": null
+      },
+      "restore-snapshot": {
+        "seq": 7,
+        "status": "ok",
+        "writeOutcome": "SNAPSHOT_RESTORED",
+        "reappliedDeletions": 1,
+        "visible": null,
+        "point": null
+      },
+      "inspect-after": {
+        "seq": 8,
+        "status": "ok",
+        "writeOutcome": null,
+        "reappliedDeletions": null,
+        "visible": false,
+        "point": null
+      }
+    }
+  },
+  "derived": {
+    "runId": "run_cc23952448",
+    "guardedId": "run_be93b383c3",
+    "steps": 8,
+    "verdict": {
+      "result": "VIOLATION",
+      "summary": "A geração g1 de item-17, excluída e confirmada na etapa 5, voltou a ficar visível na etapa 7 (ponto de leitura: cache). Nenhuma escrita depois da exclusão explica isso: o dado sobreviveu no ponto de leitura \"cache\", que não foi invalidado. Também reapareceu em: índice de busca (etapa 8).",
+      "allowances": [],
+      "violations": [
+        {
+          "entityId": "item-17",
+          "invariant": "deleted-generation-stays-gone",
+          "generation": 1,
+          "attribution": "stale-derived",
+          "explanation": "A geração g1 de item-17, excluída e confirmada na etapa 5, voltou a ficar visível na etapa 7 (ponto de leitura: cache). Nenhuma escrita depois da exclusão explica isso: o dado sobreviveu no ponto de leitura \"cache\", que não foi invalidado.",
+          "evidenceSeqs": [
+            4,
+            5,
+            7
+          ],
+          "observedAtSeq": 7,
+          "observationPoint": "cache"
+        },
+        {
+          "entityId": "item-17",
+          "invariant": "deleted-generation-stays-gone",
+          "generation": 1,
+          "attribution": "stale-derived",
+          "explanation": "A geração g1 de item-17, excluída e confirmada na etapa 5, voltou a ficar visível na etapa 8 (ponto de leitura: índice de busca). Nenhuma escrita depois da exclusão explica isso: o dado sobreviveu no ponto de leitura \"índice de busca\", que não foi invalidado.",
+          "evidenceSeqs": [
+            4,
+            5,
+            8
+          ],
+          "observedAtSeq": 8,
+          "observationPoint": "search"
+        }
+      ],
+      "checkedPoints": [
+        {
+          "seq": 2,
+          "stepId": "warm-cache",
+          "visible": true,
+          "observationPoint": "cache",
+          "afterConfirmation": false,
+          "observedGeneration": 1
+        },
+        {
+          "seq": 3,
+          "stepId": "search-before",
+          "visible": true,
+          "observationPoint": "search",
+          "afterConfirmation": false,
+          "observedGeneration": 1
+        },
+        {
+          "seq": 6,
+          "stepId": "inspect-primary",
+          "visible": false,
+          "afterConfirmation": true
+        },
+        {
+          "seq": 7,
+          "stepId": "inspect-cache",
+          "visible": true,
+          "observationPoint": "cache",
+          "afterConfirmation": true,
+          "observedGeneration": 1
+        },
+        {
+          "seq": 8,
+          "stepId": "inspect-search",
+          "visible": true,
+          "observationPoint": "search",
+          "afterConfirmation": true,
+          "observedGeneration": 1
+        }
+      ],
+      "confirmationSeq": 5,
+      "deletedGeneration": 1,
+      "inconclusiveReasons": []
+    },
+    "guardedVerdict": {
+      "result": "NO_VIOLATION_OBSERVED",
+      "summary": "Nenhuma violação observada nas 3 leitura(s) feitas após a confirmação. Isso vale para esta sequência e estes pontos de observação; não prova correção em geral.",
+      "allowances": [],
+      "violations": [],
+      "checkedPoints": [
+        {
+          "seq": 2,
+          "stepId": "warm-cache",
+          "visible": true,
+          "observationPoint": "cache",
+          "afterConfirmation": false,
+          "observedGeneration": 1
+        },
+        {
+          "seq": 3,
+          "stepId": "search-before",
+          "visible": true,
+          "observationPoint": "search",
+          "afterConfirmation": false,
+          "observedGeneration": 1
+        },
+        {
+          "seq": 6,
+          "stepId": "inspect-primary",
+          "visible": false,
+          "afterConfirmation": true
+        },
+        {
+          "seq": 7,
+          "stepId": "inspect-cache",
+          "visible": false,
+          "observationPoint": "cache",
+          "afterConfirmation": true
+        },
+        {
+          "seq": 8,
+          "stepId": "inspect-search",
+          "visible": false,
+          "observationPoint": "search",
+          "afterConfirmation": true
+        }
+      ],
+      "confirmationSeq": 5,
+      "deletedGeneration": 1,
+      "inconclusiveReasons": []
+    },
+    "bench": {
+      "w": 1276,
+      "h": 496.875,
+      "nodes": {
+        "1": {
+          "x": 174,
+          "y": 264.96875,
+          "w": 126,
+          "h": 64
+        },
+        "2": {
+          "x": 310,
+          "y": 363.75,
+          "w": 126,
+          "h": 70.3125
+        },
+        "3": {
+          "x": 446,
+          "y": 355.9375,
+          "w": 126,
+          "h": 85.9375
+        },
+        "4": {
+          "x": 582,
+          "y": 261.421875,
+          "w": 126,
+          "h": 71.09375
+        },
+        "5": {
+          "x": 718,
+          "y": 254,
+          "w": 126,
+          "h": 85.9375
+        },
+        "6": {
+          "x": 854,
+          "y": 366.90625,
+          "w": 126,
+          "h": 64
+        },
+        "7": {
+          "x": 990,
+          "y": 355.9375,
+          "w": 126,
+          "h": 85.9375
+        },
+        "8": {
+          "x": 1126,
+          "y": 355.9375,
+          "w": 126,
+          "h": 85.9375
+        }
+      },
+      "watched": {
+        "x": 849,
+        "y": 246,
+        "w": 408,
+        "h": 229.875
+      }
+    },
+    "seqs": {
+      "create": 1,
+      "warm-cache": 2,
+      "search-before": 3,
+      "delete": 4,
+      "confirm": 5,
+      "inspect-primary": 6,
+      "inspect-cache": 7,
+      "inspect-search": 8
+    },
+    "guardedFacts": {
+      "create": {
+        "seq": 1,
+        "status": "ok",
+        "writeOutcome": "CREATED",
+        "reappliedDeletions": null,
+        "visible": null,
+        "point": null
+      },
+      "warm-cache": {
+        "seq": 2,
+        "status": "ok",
+        "writeOutcome": null,
+        "reappliedDeletions": null,
+        "visible": true,
+        "point": "cache"
+      },
+      "search-before": {
+        "seq": 3,
+        "status": "ok",
+        "writeOutcome": null,
+        "reappliedDeletions": null,
+        "visible": true,
+        "point": "search"
+      },
+      "delete": {
+        "seq": 4,
+        "status": "ok",
+        "writeOutcome": "DELETED",
+        "reappliedDeletions": null,
+        "visible": null,
+        "point": null
+      },
+      "confirm": {
+        "seq": 5,
+        "status": "ok",
+        "writeOutcome": null,
+        "reappliedDeletions": null,
+        "visible": null,
+        "point": null
+      },
+      "inspect-primary": {
+        "seq": 6,
+        "status": "ok",
+        "writeOutcome": null,
+        "reappliedDeletions": null,
+        "visible": false,
+        "point": null
+      },
+      "inspect-cache": {
+        "seq": 7,
+        "status": "ok",
+        "writeOutcome": null,
+        "reappliedDeletions": null,
+        "visible": false,
+        "point": "cache"
+      },
+      "inspect-search": {
+        "seq": 8,
+        "status": "ok",
+        "writeOutcome": null,
+        "reappliedDeletions": null,
+        "visible": false,
+        "point": "search"
+      }
+    }
+  },
+  "report": {
+    "file": "residuo-run_ef2e24e26d.html",
+    "externalRequests": 0,
+    "w": 1440,
+    "h": 1500
+  },
+  "explore": {
+    "command": "npm run residuo -- explore --reference --clients 3",
+    "exitCode": 1,
+    "output": [
+      "alvo: serviço de referência (vulnerable)",
+      "explorando ordens de entrega com 3 clientes offline (ações: delete, release-1, release-2, release-3, replay-1)…",
+      "  VIOLATION              delete → release-1 → release-3 → release-2 → replay-1",
+      "  VIOLATION              release-2 → release-3 → release-1 → delete → replay-1",
+      "  VIOLATION              release-2 → release-1 → delete → replay-1 → release-3",
+      "  VIOLATION              release-1 → delete → release-2 → replay-1 → release-3",
+      "  VIOLATION              release-2 → release-1 → replay-1 → delete → release-3",
+      "  VIOLATION              release-1 → replay-1 → release-2 → delete → release-3",
+      "  VIOLATION              delete → release-1 → release-3 → replay-1 → release-2",
+      "  VIOLATION              delete → release-1 → release-2 → release-3 → replay-1",
+      "  VIOLATION              release-1 → release-3 → delete → replay-1 → release-2",
+      "  VIOLATION              release-3 → delete → release-1 → replay-1 → release-2",
+      "  NO_VIOLATION_OBSERVED  release-3 → release-2 → release-1 → replay-1 → delete",
+      "  VIOLATION              delete → release-3 → release-1 → release-2 → replay-1",
+      "  VIOLATION              release-1 → delete → release-3 → release-2 → replay-1",
+      "  VIOLATION              release-1 → release-2 → delete → replay-1 → release-3",
+      "  VIOLATION              release-1 → delete → release-3 → replay-1 → release-2",
+      "  VIOLATION              release-1 → delete → release-2 → release-3 → replay-1",
+      "  NO_VIOLATION_OBSERVED  release-3 → release-1 → replay-1 → release-2 → delete",
+      "  VIOLATION              release-3 → release-1 → replay-1 → delete → release-2",
+      "  VIOLATION              release-3 → delete → release-2 → release-1 → replay-1",
+      "  VIOLATION              delete → release-2 → release-1 → release-3 → replay-1",
+      "  VIOLATION              release-1 → release-3 → release-2 → delete → replay-1",
+      "  VIOLATION              release-2 → release-1 → delete → release-3 → replay-1",
+      "  NO_VIOLATION_OBSERVED  release-1 → release-3 → release-2 → replay-1 → delete",
+      "  VIOLATION              release-1 → release-3 → delete → release-2 → replay-1",
+      "  VIOLATION              delete → release-1 → replay-1 → release-2 → release-3",
+      "  VIOLATION              delete → release-1 → release-2 → replay-1 → release-3",
+      "  VIOLATION              delete → release-2 → release-3 → release-1 → replay-1",
+      "  NO_VIOLATION_OBSERVED  release-1 → release-2 → release-3 → replay-1 → delete",
+      "  VIOLATION              release-1 → release-2 → replay-1 → delete → release-3",
+      "  VIOLATION              delete → release-3 → release-1 → replay-1 → release-2",
+      "  VIOLATION              release-3 → release-1 → delete → replay-1 → release-2",
+      "  VIOLATION              release-2 → delete → release-3 → release-1 → replay-1",
+      "  VIOLATION              release-2 → release-3 → delete → release-1 → replay-1",
+      "  VIOLATION              release-2 → delete → release-1 → replay-1 → release-3",
+      "  VIOLATION              release-1 → release-2 → delete → release-3 → replay-1",
+      "  VIOLATION              release-3 → release-1 → delete → release-2 → replay-1",
+      "  VIOLATION              release-1 → release-2 → release-3 → delete → replay-1",
+      "  VIOLATION              release-2 → delete → release-1 → release-3 → replay-1",
+      "  VIOLATION              release-3 → release-2 → delete → release-1 → replay-1",
+      "  VIOLATION              release-1 → delete → replay-1 → release-3 → release-2",
+      "  VIOLATION              release-1 → replay-1 → delete → release-2 → release-3",
+      "  VIOLATION              delete → release-3 → release-2 → release-1 → replay-1",
+      "  VIOLATION              release-1 → replay-1 → release-3 → delete → release-2",
+      "  NO_VIOLATION_OBSERVED  release-3 → release-1 → release-2 → replay-1 → delete",
+      "  VIOLATION              release-3 → release-1 → release-2 → delete → replay-1",
+      "  VIOLATION              release-1 → replay-1 → delete → release-3 → release-2",
+      "  VIOLATION              release-1 → release-3 → replay-1 → delete → release-2",
+      "  VIOLATION              release-3 → delete → release-1 → release-2 → replay-1",
+      "  NO_VIOLATION_OBSERVED  release-2 → release-3 → release-1 → replay-1 → delete",
+      "  VIOLATION              delete → release-2 → release-1 → replay-1 → release-3",
+      "  VIOLATION              release-1 → delete → replay-1 → release-2 → release-3",
+      "  NO_VIOLATION_OBSERVED  release-1 → release-3 → replay-1 → release-2 → delete",
+      "  VIOLATION              release-2 → release-1 → release-3 → delete → replay-1",
+      "  VIOLATION              delete → release-1 → replay-1 → release-3 → release-2",
+      "  NO_VIOLATION_OBSERVED  release-2 → release-1 → replay-1 → release-3 → delete",
+      "  NO_VIOLATION_OBSERVED  release-1 → replay-1 → release-2 → release-3 → delete",
+      "  NO_VIOLATION_OBSERVED  release-1 → replay-1 → release-3 → release-2 → delete",
+      "  NO_VIOLATION_OBSERVED  release-2 → release-1 → release-3 → replay-1 → delete",
+      "  NO_VIOLATION_OBSERVED  release-1 → release-2 → replay-1 → release-3 → delete",
+      "  VIOLATION              release-3 → release-2 → release-1 → delete → replay-1",
+      "",
+      "60 de 60 ordens executadas · 48 com violação · 0 inconclusivas",
+      "",
+      "menor sequência que ainda reproduz o bug: delete → release-1",
+      "   1. Criar registro             Registro criado: g1, revisão 1.",
+      "   2. Preparar edição 1          Edição preparada a partir da revisão 1 de g1.",
+      "   3. Reter edição 1             Entrega retida: o consumidor ainda não recebeu a edição.",
+      "   4. Excluir registro           Exclusão aceita para g1 (revisão 1).",
+      "   5. Confirmar exclusão         Exclusão em vigor (mecanismo: row-removed).",
+      "   6. Ler após exclusão          Leitura: registro ausente.",
+      "   7. Liberar edição 1           O alvo relata que o consumidor aplicou a edição por upsert e INSERIU o registro de novo (g1, revisão 2).",
+      "   8. Ler após edição 1          Leitura: a geração excluída g1 está visível de novo.",
+      "  => A geração g1 de item-17, excluída e confirmada na etapa 5, voltou a ficar visível na etapa 8. O alvo informa que a última escrita veio de \"Liberar edição 1\" (etapa 7, resultado UPSERT_INSERTED)."
+    ]
+  }
+}

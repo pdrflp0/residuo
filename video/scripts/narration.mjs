@@ -1,20 +1,20 @@
 /**
  * Gera a narração em trechos sincronizados com as cenas do vídeo.
  *
- *   node scripts/narration.mjs say          # voz do macOS (Luciana), sem conta
- *   node scripts/narration.mjs elevenlabs   # ElevenLabs; lê a chave de video/.env.local
+ *   node scripts/narration.mjs say [intro|l3]          # voz do macOS (Luciana), sem conta
+ *   node scripts/narration.mjs elevenlabs [intro|l3]   # ElevenLabs; lê a chave de video/.env.local
  *
  * video/.env.local (não vai para o git):
  *   ELEVENLABS_API_KEY=...
  *   ELEVENLABS_VOICE_ID=...   # opcional; escolha uma voz pt-BR na Voice Library
  *
- * Saída: public/audio/narration-<motor>/<id>.wav e src/audio-manifest.json (início e duração de cada trecho).
+ * Saída: public/audio/narration-<motor>[-l3]/<id>.wav e src/audio-manifest.json (início e duração de cada trecho).
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 
-/** Roteiro: `at` é o segundo do vídeo em que o trecho começa. */
+/** Roteiro do vídeo de apresentação: `at` é o segundo do vídeo em que o trecho começa. */
 export const SCRIPT = [
   { id: 'hook-1', at: 0.4, text: 'Você apagou. O servidor confirmou.' },
   { id: 'hook-2', at: 3.2, text: 'E ele voltou.' },
@@ -38,11 +38,39 @@ export const SCRIPT = [
   { id: 'outro', at: 73.3, text: 'Resíduo. Código aberto, no GitHub.' },
 ];
 
+/** Roteiro do vídeo do nível 3 (77 s). Os tempos seguem as cenas de src/l3. */
+export const SCRIPT_L3 = [
+  { id: 'hook-1', at: 0.4, text: 'Apagar do banco não basta.' },
+  { id: 'hook-2', at: 2.6, text: 'O dado ainda pode voltar por outros caminhos.' },
+  { id: 'backup-1', at: 6.0, text: 'Primeiro caminho: o backup.' },
+  { id: 'backup-2', at: 8.4, text: 'O registro é apagado, e a exclusão, confirmada.' },
+  { id: 'backup-3', at: 12.0, text: 'Aí alguém restaura o backup de ontem…' },
+  { id: 'backup-4', at: 15.0, text: 'e o registro apagado volta junto.' },
+  { id: 'derived-1', at: 19.6, text: 'Segundo caminho: cache e busca.' },
+  { id: 'derived-2', at: 22.2, text: 'No banco, o registro sumiu. Mas o cache e o índice ainda mostram.', speed: 1.1 },
+  { id: 'derived-3', at: 27.0, text: 'O Resíduo lê cada ponto e diz onde o dado sobreviveu.', speed: 1.1 },
+  { id: 'fix-1', at: 32.2, text: 'No modo protegido, as exclusões são reaplicadas depois da restauração…', speed: 1.1 },
+  { id: 'fix-2', at: 36.6, text: 'e o cache é limpo na mesma transação da exclusão.', speed: 1.1 },
+  { id: 'report', at: 41.8, text: 'Cada execução vira um relatório HTML de um arquivo só, pra anexar numa issue.', speed: 1.1 },
+  { id: 'explore-1', at: 50.2, text: 'Com três clientes offline, são sessenta ordens de entrega.', speed: 1.1 },
+  { id: 'explore-2', at: 55.2, text: 'E a falha é reduzida à menor sequência que ainda reproduz o bug.', speed: 1.15 },
+  { id: 'ai-1', at: 59.5, text: 'Se você quiser, uma IA explica o resultado.', speed: 1.12 },
+  { id: 'ai-2', at: 62.7, text: 'Mas ela não decide: cada frase cita uma etapa,', speed: 1.18 },
+  { id: 'ai-3', at: 66.6, text: 'e, se contradisser o veredito, o resumo é descartado.', speed: 1.1 },
+  { id: 'outro', at: 71.4, text: 'Resíduo. Código aberto, no GitHub.' },
+];
+
+const VIDEOS = { intro: { script: SCRIPT, end: 79, suffix: '', key: (e) => e }, l3: { script: SCRIPT_L3, end: 77, suffix: '-l3', key: (e) => `l3-${e}` } };
+
 const engine = process.argv[2] ?? 'say';
 if (!['say', 'elevenlabs'].includes(engine)) throw new Error('use: say | elevenlabs');
+const video = VIDEOS[process.argv[3] ?? 'intro'];
+if (!video) throw new Error('vídeo: intro | l3');
+const SCRIPT_RUN = video.script;
 
 const root = new URL('..', import.meta.url).pathname;
-const outDir = `${root}public/audio/narration-${engine}/`;
+const audioDir = `narration-${engine}${video.suffix}`;
+const outDir = `${root}public/audio/${audioDir}/`;
 await mkdir(outDir, { recursive: true });
 
 /** Duração de um WAV PCM lendo o cabeçalho (procura o bloco "data"). */
@@ -166,27 +194,27 @@ function normalizeWav(file) {
 }
 
 const segments = [];
-for (const [i, seg] of SCRIPT.entries()) {
+for (const [i, seg] of SCRIPT_RUN.entries()) {
   const wav = `${outDir}${seg.id}.wav`;
   // ONLY=id1,id2 regenera só esses trechos e reaproveita os outros (economiza créditos)
   const only = process.env.ONLY?.split(',');
   if (only && !only.includes(seg.id) && existsSync(wav)) {
     await normalizeWav(wav);
-    segments.push({ id: seg.id, at: seg.at, duration: Number(wavDuration(wav).toFixed(3)), file: `audio/narration-${engine}/${seg.id}.wav` });
+    segments.push({ id: seg.id, at: seg.at, duration: Number(wavDuration(wav).toFixed(3)), file: `audio/${audioDir}/${seg.id}.wav` });
     continue;
   }
   if (engine === 'say') await synthSay(seg, wav);
-  else await synthEleven(seg, wav, SCRIPT[i - 1], SCRIPT[i + 1]);
+  else await synthEleven(seg, wav, SCRIPT_RUN[i - 1], SCRIPT_RUN[i + 1]);
   await trimWav(wav);
   await normalizeWav(wav);
   const dur = wavDuration(wav);
-  segments.push({ id: seg.id, at: seg.at, duration: Number(dur.toFixed(3)), file: `audio/narration-${engine}/${seg.id}.wav` });
+  segments.push({ id: seg.id, at: seg.at, duration: Number(dur.toFixed(3)), file: `audio/${audioDir}/${seg.id}.wav` });
 }
 
 // avisa quando um trecho invade o próximo
 let ok = true;
 for (const [i, s] of segments.entries()) {
-  const limit = segments[i + 1]?.at ?? 79;
+  const limit = segments[i + 1]?.at ?? video.end;
   const end = s.at + s.duration;
   const flag = end > limit - 0.1 ? '  <-- passa do próximo trecho' : '';
   if (flag) ok = false;
@@ -195,6 +223,6 @@ for (const [i, s] of segments.entries()) {
 
 const manifestFile = `${root}src/audio-manifest.json`;
 const manifest = JSON.parse(await readFile(manifestFile, 'utf8').catch(() => '{"say":[],"elevenlabs":[]}'));
-manifest[engine] = segments;
+manifest[video.key(engine)] = segments;
 await writeFile(manifestFile, `${JSON.stringify(manifest, null, 2)}\n`);
 console.log(ok ? 'narração sincronizada.' : 'há trechos longos demais: encurte o texto ou ajuste a velocidade.');

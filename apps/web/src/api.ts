@@ -1,4 +1,4 @@
-import type { AdapterDescriptor, Mode, Run, RunComparison, RunConfigInput, RunDetail, ScenarioSummary } from '@residuo/contracts';
+import type { AdapterDescriptor, AiSummary, Mode, Run, RunComparison, RunConfigInput, RunDetail, ScenarioSummary } from '@residuo/contracts';
 
 export class ApiError extends Error {
   constructor(
@@ -42,6 +42,7 @@ export interface About {
   engineVersion: string;
   adapter: AdapterDescriptor;
   reference: { reachable: boolean; version?: string };
+  ai: { enabled: boolean; model: string };
 }
 
 export const getAbout = () => api<About>('/about');
@@ -52,6 +53,7 @@ export const createRun = (input: RunConfigInput) => api<Run>('/runs', { method: 
 export const advanceRun = (id: string) => api<{ advanced: boolean }>(`/runs/${id}/advance`, { method: 'POST' });
 export const replayRun = (id: string) => api<Run>(`/runs/${id}/replay`, { method: 'POST' });
 export const counterpartRun = (id: string, mode: Mode) => api<Run>(`/runs/${id}/counterpart`, { method: 'POST', body: JSON.stringify({ mode }) });
+export const summarizeRun = (id: string, refresh = false) => api<AiSummary>(`/runs/${id}/summary${refresh ? '?refresh=1' : ''}`, { method: 'POST' });
 export const getComparison = (base: string, candidate: string) =>
   api<{ comparison: RunComparison; base: RunDetail; candidate: RunDetail }>(`/comparisons?base=${base}&candidate=${candidate}`);
 

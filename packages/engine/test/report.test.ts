@@ -1,4 +1,3 @@
-import type { RunDetail } from '@residuo/contracts';
 import { describe, expect, it } from 'vitest';
 import { compareRuns } from '../src/compare';
 import { evaluate } from '../src/evaluate';
@@ -6,30 +5,7 @@ import { describeStep } from '../src/narrative';
 import { buildReport, renderMarkdown } from '../src/report';
 import { renderHtml } from '../src/report-html';
 import { sanitize } from '../src/sanitize';
-import { getScenario, summarizeScenario } from '../src/scenarios';
-import { Trace } from './fixtures';
-
-function detail(mode: 'vulnerable' | 'guarded', trace: Trace, id = `run_${mode}`): RunDetail {
-  const scenario = getScenario('held-update-after-delete')!;
-  const verdict = evaluate({ policy: 'delete-wins', steps: trace.steps });
-  return {
-    scenario: summarizeScenario(scenario),
-    steps: trace.steps,
-    run: {
-      id,
-      scenarioId: scenario.id,
-      scenarioVersion: scenario.version,
-      engineVersion: '0.1.0',
-      adapter: { name: 'fixture', version: '0', capabilities: [], points: ['primary'], observationPoints: [], limits: ['limite do adapter'] },
-      config: { scenarioId: scenario.id, scenarioVersion: scenario.version, mode, policy: 'delete-wins', seed: 1200, fault: 'none', stepMode: 'auto', timeoutMs: 3000 },
-      namespace: `rsd-${id}`,
-      entityId: 'item-17',
-      status: 'completed',
-      createdAt: '2026-01-01T00:00:00.000Z',
-      verdict,
-    },
-  };
-}
+import { detail, Trace } from './fixtures';
 
 const vulnerable = () => new Trace().create().deleteG().confirm().absent().release('UPSERT_INSERTED', true).visible(1, 'delivery:dlv_1');
 const guarded = () => new Trace().create().deleteG().confirm().absent().release('REJECTED_DELETED', false).absent();

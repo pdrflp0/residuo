@@ -70,6 +70,7 @@ Rodar o mesmo cenário nos dois modos e comparar é a demonstração principal.
 | **Índice de busca** | Resumo dos registros usado pela busca. Também precisa ser limpo quando algo é apagado. |
 | **Ponto de leitura** | Onde o Resíduo lê para verificar: banco (fonte de verdade), cache, índice. |
 | **Barreira** | O ponto em que o Resíduo espera uma etapa terminar antes de começar a próxima. É o que torna a ordem reproduzível, sem depender de "esperar um tempinho". |
+| **Resumo com IA** | Uma explicação em texto escrita por um modelo de IA, opcional. Cada frase cita as etapas em que se apoia. Ela não decide o resultado: se contradisser o veredito ou citar uma etapa que não existe, é descartada. |
 
 ## 5. Como ler a tela
 
@@ -77,9 +78,10 @@ Rodar o mesmo cenário nos dois modos e comparar é a demonstração principal.
 2. **Linha do tempo**: quatro faixas (API, cliente offline, consumidor, observador) e as etapas em ordem. A área listrada à direita é a **zona vigiada**, depois da confirmação.
 3. **Evidência**: clique numa etapa para ver a requisição e a resposta HTTP reais e os fatos que o Resíduo extraiu delas.
 4. **Repetir em guarded e comparar**: mesmo cenário, outro modo. As etapas que mudaram ganham a marca **≠**.
+5. **Resumo com IA** (se estiver ligado): a explicação em texto, com botões "etapa N" que levam à evidência citada.
 
 ## 6. O que ele não promete
 
-- Ele mede o que a **API de leitura** do serviço mostra; não vasculha backups, caches ou réplicas.
-- Ele reproduz **uma ordem controlada** de eventos, não todas as ordens possíveis de uma corrida real.
+- Ele mede o que a **API de leitura** do serviço mostra. Cache, índice de busca e backup só entram nos cenários do nível 3, pelos pontos de leitura que o sistema oferece; réplicas, logs e o disco ficam de fora.
+- Ele reproduz **ordens controladas** de eventos (uma por execução, ou até 360 com `residuo explore`), não a temporização de uma corrida real.
 - Ele não é certificação de privacidade nem de conformidade com a LGPD.

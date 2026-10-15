@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { extract, render, renderPath, TemplateError } from '../src/adapters/template';
-import { allOrders, isValidOrder, scenarioForOrder } from '../src/explore';
+import { allOrders, exploreActions, isValidOrder, scenarioForOrder } from '../src/explore';
 
 describe('modelos do residuo.json', () => {
   const vars = { entityId: 'item 17', generation: 2, data: { title: 'Lista', tags: ['a'] } };
@@ -38,6 +38,22 @@ describe('ordens de entrega', () => {
     expect(orders.every(isValidOrder)).toBe(true);
     expect(isValidOrder(['replay-1', 'release-1', 'delete'])).toBe(false);
     expect(isValidOrder(['release-1'])).toBe(false);
+  });
+
+  it('mais clientes: (clientes + 2)! / 2 ordens, e cada reentrega depois da entrega da mesma edição', () => {
+    expect(exploreActions(2)).toEqual(['delete', 'release-1', 'release-2', 'replay-1']);
+    expect([1, 2, 3, 4].map((n) => allOrders(exploreActions(n)).length)).toEqual([3, 12, 60, 360]);
+    expect(allOrders(exploreActions(3, { replay: false }))).toHaveLength(24);
+    expect(() => exploreActions(0)).toThrow(RangeError);
+    expect(() => exploreActions(5)).toThrow(RangeError);
+    expect(isValidOrder(['delete', 'replay-3', 'release-3'])).toBe(false);
+    expect(isValidOrder(['release-3', 'delete', 'replay-3'])).toBe(true);
+  });
+
+  it('cenário com 3 clientes: todas as edições preparadas sobre a mesma revisão, antes de qualquer entrega', () => {
+    const s = scenarioForOrder(['release-3', 'delete', 'release-1', 'release-2']);
+    expect(s.steps.slice(0, 7).map((x) => x.id)).toEqual(['create', 'prepare-1', 'hold-1', 'prepare-2', 'hold-2', 'prepare-3', 'hold-3']);
+    expect(s.title).toBe('Ordem explorada: edição 3 → exclusão → edição 1 → edição 2');
   });
 
   it('depois da exclusão, toda ação é seguida de uma leitura', () => {

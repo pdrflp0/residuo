@@ -21,7 +21,7 @@
     "db:down": "docker compose down",
     "dev": "concurrently -k -n ref,api,web -c magenta,cyan,green \"npm run dev -w @residuo/reference-service\" \"npm run dev -w @residuo/api\" \"npm run dev -w @residuo/web\"",
     "lab": "node packages/cli/bin/residuo.mjs run --reference",
-    "typecheck": "npm run typecheck --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present && tsc -p tsconfig.json",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "build:web": "npm run build -w @residuo/web",

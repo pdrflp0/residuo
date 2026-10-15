@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { startAnthropicStub } from '../support/anthropic-stub';
 import { root, startNotes } from './harness';
 
 const pexec = promisify(execFile);
@@ -26,8 +27,16 @@ afterAll(async () => {
 });
 
 async function cli(...args: string[]) {
+  return cliWith({}, ...args);
+}
+
+async function cliWith(env: Record<string, string | undefined>, ...args: string[]) {
   try {
-    const { stdout, stderr } = await pexec('node', [join(root, 'packages/cli/bin/residuo.mjs'), ...args], { cwd: root, timeout: 60_000 });
+    const { stdout, stderr } = await pexec('node', [join(root, 'packages/cli/bin/residuo.mjs'), ...args], {
+      cwd: root,
+      timeout: 60_000,
+      env: { ...process.env, ANTHROPIC_API_KEY: undefined, ...env },
+    });
     return { code: 0, stdout, stderr };
   } catch (err) {
     const e = err as { code: number; stdout: string; stderr: string };
@@ -73,6 +82,14 @@ describe('residuo (CLI)', () => {
     expect(JSON.parse(r.stdout).minimal.order).toEqual(['delete', 'release-1']);
   });
 
+  it('explore --clients 3: 60 ordens; fora de 1–4 é uso incorreto (64)', async () => {
+    const r = await cli('explore', '--config', configPath, '--clients', '3', '--json');
+    expect(r.code).toBe(1);
+    const out = JSON.parse(r.stdout);
+    expect([out.clients, out.totalOrders, out.minimal.order]).toEqual([3, 60, ['delete', 'release-1']]);
+    expect((await cli('explore', '--config', configPath, '--clients', '9')).code).toBe(64);
+  });
+
   it('check: lista capacidades e cenários', async () => {
     const r = await cli('check', '--config', configPath, '--json');
     expect(r.code).toBe(0);
@@ -102,5 +119,31 @@ describe('residuo (CLI)', () => {
     const r = await cli('schema');
     const committed = await readFile(join(root, 'schema/residuo.schema.json'), 'utf8');
     expect(JSON.parse(r.stdout)).toEqual(JSON.parse(committed));
+  });
+});
+
+describe('residuo summarize (resumo com IA)', () => {
+  it('lê o relatório, pede o resumo (API substituída por stub) e imprime as afirmações com as etapas', async () => {
+    const stub = await startAnthropicStub();
+    try {
+      const reportDir = join(dir, 'para-resumo');
+      await cli('run', '--config', configPath, '--scenario', 'held-update-after-delete', '--report', reportDir);
+      const file = join(reportDir, 'held-update-after-delete.json');
+      const r = await cliWith({ ANTHROPIC_API_KEY: 'test-key', RESIDUO_AI_BASE_URL: stub.url }, 'summarize', file);
+      expect(r.code).toBe(0);
+      expect(r.stdout).toContain('## Resumo gerado por IA');
+      expect(r.stdout).toMatch(/upsert .*_\(etapas \d+, \d+\)_/);
+      const json = await cliWith({ ANTHROPIC_API_KEY: 'test-key', RESIDUO_AI_BASE_URL: stub.url }, 'summarize', file, '--json');
+      expect(JSON.parse(json.stdout)).toMatchObject({ schema: 'residuo.ai-summary/v1', verdict: 'VIOLATION' });
+    } finally {
+      await stub.close();
+    }
+  });
+
+  it('sem chave é uso incorreto (64); arquivo que não é relatório sai com 65', async () => {
+    expect((await cli('summarize', configPath)).code).toBe(64);
+    const r = await cliWith({ ANTHROPIC_API_KEY: 'test-key' }, 'summarize', configPath);
+    expect(r.code).toBe(65);
+    expect(r.stderr).toContain('não é um relatório do Resíduo');
   });
 });

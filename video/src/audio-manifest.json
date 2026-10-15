@@ -242,5 +242,115 @@
       "duration": 2.371,
       "file": "audio/narration-elevenlabs/outro.wav"
     }
+  ],
+  "l3-elevenlabs": [
+    {
+      "id": "hook-1",
+      "at": 0.4,
+      "duration": 1.378,
+      "file": "audio/narration-elevenlabs-l3/hook-1.wav"
+    },
+    {
+      "id": "hook-2",
+      "at": 2.6,
+      "duration": 2.378,
+      "file": "audio/narration-elevenlabs-l3/hook-2.wav"
+    },
+    {
+      "id": "backup-1",
+      "at": 6,
+      "duration": 1.494,
+      "file": "audio/narration-elevenlabs-l3/backup-1.wav"
+    },
+    {
+      "id": "backup-2",
+      "at": 8.4,
+      "duration": 2.959,
+      "file": "audio/narration-elevenlabs-l3/backup-2.wav"
+    },
+    {
+      "id": "backup-3",
+      "at": 12,
+      "duration": 2.061,
+      "file": "audio/narration-elevenlabs-l3/backup-3.wav"
+    },
+    {
+      "id": "backup-4",
+      "at": 15,
+      "duration": 1.783,
+      "file": "audio/narration-elevenlabs-l3/backup-4.wav"
+    },
+    {
+      "id": "derived-1",
+      "at": 19.6,
+      "duration": 2.423,
+      "file": "audio/narration-elevenlabs-l3/derived-1.wav"
+    },
+    {
+      "id": "derived-2",
+      "at": 22.2,
+      "duration": 4.515,
+      "file": "audio/narration-elevenlabs-l3/derived-2.wav"
+    },
+    {
+      "id": "derived-3",
+      "at": 27,
+      "duration": 3.426,
+      "file": "audio/narration-elevenlabs-l3/derived-3.wav"
+    },
+    {
+      "id": "fix-1",
+      "at": 32.2,
+      "duration": 4.085,
+      "file": "audio/narration-elevenlabs-l3/fix-1.wav"
+    },
+    {
+      "id": "fix-2",
+      "at": 36.6,
+      "duration": 2.442,
+      "file": "audio/narration-elevenlabs-l3/fix-2.wav"
+    },
+    {
+      "id": "report",
+      "at": 41.8,
+      "duration": 5.036,
+      "file": "audio/narration-elevenlabs-l3/report.wav"
+    },
+    {
+      "id": "explore-1",
+      "at": 50.2,
+      "duration": 2.864,
+      "file": "audio/narration-elevenlabs-l3/explore-1.wav"
+    },
+    {
+      "id": "explore-2",
+      "at": 55.2,
+      "duration": 3.168,
+      "file": "audio/narration-elevenlabs-l3/explore-2.wav"
+    },
+    {
+      "id": "ai-1",
+      "at": 59.5,
+      "duration": 2.733,
+      "file": "audio/narration-elevenlabs-l3/ai-1.wav"
+    },
+    {
+      "id": "ai-2",
+      "at": 62.7,
+      "duration": 2.593,
+      "file": "audio/narration-elevenlabs-l3/ai-2.wav"
+    },
+    {
+      "id": "ai-3",
+      "at": 66.6,
+      "duration": 3.445,
+      "file": "audio/narration-elevenlabs-l3/ai-3.wav"
+    },
+    {
+      "id": "outro",
+      "at": 71.4,
+      "duration": 2.594,
+      "file": "audio/narration-elevenlabs-l3/outro.wav"
+    }
   ]
 }

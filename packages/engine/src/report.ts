@@ -1,4 +1,4 @@
-import type { ReportV1, RunDetail, StepObservation } from '@residuo/contracts';
+import type { AiSummary, ReportV1, RunDetail, StepObservation } from '@residuo/contracts';
 import { describeStep } from './narrative';
 
 export const ENGINE_VERSION = '0.1.0';
@@ -34,6 +34,7 @@ export function buildReport(detail: RunDetail, generatedAt: Date = new Date()): 
       },
       cli: `npm run lab -- --scenario ${c.scenarioId} --mode ${c.mode} --policy ${c.policy} --seed ${c.seed} --fault ${c.fault} --timeout ${c.timeoutMs}`,
     },
+    ...(detail.aiSummary ? { aiSummary: detail.aiSummary } : {}),
   };
 }
 
@@ -55,6 +56,7 @@ export function renderMarkdown(report: ReportV1): string {
   lines.push(`**Resultado:** ${verdict ? VERDICT_LABEL[verdict.result] : `sem veredito (status ${run.status})`}`);
   lines.push('');
   if (verdict) lines.push(verdict.summary, '');
+  if (report.aiSummary) lines.push(...renderAiSummaryMarkdown(report.aiSummary));
   lines.push('## Configuração', '');
   lines.push('| Campo | Valor |', '| --- | --- |');
   const rows: [string, string][] = [
@@ -134,6 +136,23 @@ export function renderMarkdown(report: ReportV1): string {
   for (const l of report.limits) lines.push(`- ${l}`);
   lines.push('');
   return lines.join('\n');
+}
+
+const cite = (steps: number[]) => ` _(etapa${steps.length > 1 ? 's' : ''} ${steps.join(', ')})_`;
+
+/** Seção Markdown do resumo com IA (também usada pela CLI `residuo summarize`). */
+export function renderAiSummaryMarkdown(ai: AiSummary): string[] {
+  const lines = ['## Resumo gerado por IA', ''];
+  lines.push(`> Escrito por \`${ai.model}\` a partir das evidências abaixo. Não decide o veredito. Cada afirmação cita as etapas usadas, e as citações foram conferidas.`, '');
+  lines.push(`**${ai.headline}**`, '');
+  for (const f of ai.findings) lines.push(`- ${f.text}${cite(f.steps)}`);
+  lines.push('');
+  if (ai.nextSteps.length) {
+    lines.push('O que investigar:', '');
+    for (const f of ai.nextSteps) lines.push(`- ${f.text}${cite(f.steps)}`);
+    lines.push('');
+  }
+  return lines;
 }
 
 export function regressionTest(report: ReportV1): string {

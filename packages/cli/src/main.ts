@@ -8,23 +8,30 @@ import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
-import { Fault, Mode, Policy, type ResolvedRunConfig, type Run, type TargetAdapter, TargetConfig, type TargetMode, type Verdict } from '@residuo/contracts';
+import { Fault, Mode, Policy, type ReportV1, type ResolvedRunConfig, type Run, type TargetAdapter, TargetConfig, type TargetMode, type Verdict } from '@residuo/contracts';
 import {
+  AiServiceError,
+  AiSummaryRejected,
   buildReport,
   ConfigHttpAdapter,
+  DEFAULT_AI_MODEL,
   DEFAULT_SEED,
   describeStep,
   ENGINE_VERSION,
   executeScenario,
+  exploreActions,
   exploreOrders,
   getScenario,
+  MAX_CLIENTS,
   missingRequirements,
   ReferenceHttpAdapter,
+  renderAiSummaryMarkdown,
   renderHtml,
   renderMarkdown,
   requiredCapabilities,
   SCENARIOS,
   type Scenario,
+  summarizeReport,
   summarizeScenario,
 } from '@residuo/engine';
 import { z } from 'zod';
@@ -37,6 +44,7 @@ Uso:
   residuo run     (--config residuo.json | --reference) [opções]
   residuo explore (--config residuo.json | --reference) [opções]
   residuo schema                                   imprime o JSON Schema do residuo.json
+  residuo summarize <relatorio.json>               resumo com IA citando as etapas (opcional; precisa de ANTHROPIC_API_KEY)
 
 Opções:
   --scenario <id|all>     cenário (padrão: todos os suportados pelo alvo)
@@ -45,13 +53,15 @@ Opções:
   --policy <p>            delete-wins | explicit-restore (padrão: o do cenário)
   --timeout <ms>          tempo limite por chamada (padrão 3000)
   --budget <n>            explore: máximo de ordens a executar
+  --clients <n>           explore: clientes offline com edição pendente, 1 a ${MAX_CLIENTS} (padrão 2)
   --report <pasta>        grava relatório Markdown, JSON e HTML (compartilhável) de cada execução
   --json                  saída para máquinas (CI)
   --keep                  não limpa os dados de teste no alvo ao final
   --allow-remote          permite alvo fora de localhost (só em ambientes que você está autorizado a testar)
+  --model <id>            summarize: modelo (padrão ${DEFAULT_AI_MODEL} ou RESIDUO_AI_MODEL)
   --reference             usa o serviço de referência local (--mode vulnerable|guarded, --fault, --reference-url)
 
-Saída: 0 = sem violação · 1 = VIOLATION · 2 = INCONCLUSIVE · 64 = uso · 65 = configuração inválida`;
+Saída: 0 = sem violação · 1 = VIOLATION · 2 = INCONCLUSIVE · 64 = uso · 65 = arquivo inválido · 69 = resumo com IA indisponível ou descartado`;
 
 class CliError extends Error {
   constructor(
@@ -76,10 +86,12 @@ const { values: opt, positionals } = parseArgs({
     policy: { type: 'string' },
     timeout: { type: 'string', default: '3000' },
     budget: { type: 'string' },
+    clients: { type: 'string', default: '2' },
     report: { type: 'string' },
     json: { type: 'boolean', default: false },
     keep: { type: 'boolean', default: false },
     'allow-remote': { type: 'boolean', default: false },
+    model: { type: 'string' },
     help: { type: 'boolean', short: 'h', default: false },
   },
 });
@@ -253,14 +265,18 @@ async function cmdExplore(): Promise<number> {
   const missing = need.filter((c) => !caps.includes(c));
   if (missing.length) throw new CliError(`explore precisa das capacidades: ${missing.join(', ')}`, 2);
 
+  const clients = Number(opt.clients);
+  if (!Number.isInteger(clients) || clients < 1 || clients > MAX_CLIENTS) throw new CliError(`--clients deve ser um inteiro entre 1 e ${MAX_CLIENTS}`);
   const seed = Number(opt.seed ?? DEFAULT_SEED);
   const namespaces: string[] = [];
   const prefix = newNamespace('exp');
-  out(`alvo: ${target.label}\nexplorando ordens de entrega…`);
+  const actions = exploreActions(clients, { replay: caps.includes('redeliver') });
+  out(`alvo: ${target.label}\nexplorando ordens de entrega com ${clients} cliente${clients > 1 ? 's' : ''} offline (ações: ${actions.join(', ')})…`);
   const result = await exploreOrders({
     adapter: target.adapter,
     mode: target.mode,
     seed,
+    actions,
     timeoutMs: Number(opt.timeout),
     namespacePrefix: prefix,
     ...(opt.budget ? { budget: Number(opt.budget) } : {}),
@@ -291,6 +307,7 @@ async function cmdExplore(): Promise<number> {
           schema: 'residuo.cli.explore/v1',
           target: { label: target.label, adapter: target.adapter.describe() },
           seed,
+          clients,
           totalOrders: result.totalOrders,
           explored: result.explored.map(brief),
           minimal: result.minimal ? { ...brief(result.minimal), steps: result.minimal.steps } : null,
@@ -319,6 +336,37 @@ async function cmdCheck(): Promise<number> {
   out(`pontos de leitura: ${d.points.join(', ')}`);
   for (const r of rows) out(`  ${r.missing.length ? '✗' : '✓'} ${r.id}${r.missing.length ? ` — falta: ${r.missing.join(', ')}` : ''}`);
   return 0;
+}
+
+/** Resumo com IA de um relatório já gerado. Envia o relatório (sanitizado) à API da Anthropic; não altera o veredito. */
+async function cmdSummarize(): Promise<number> {
+  const path = positionals[1];
+  if (!path) throw new CliError('informe o relatório: residuo summarize relatorio.json');
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new CliError('defina ANTHROPIC_API_KEY para gerar o resumo com IA');
+  let report: ReportV1;
+  try {
+    report = JSON.parse(await readFile(resolve(path), 'utf8'));
+  } catch (err) {
+    throw new CliError(`não foi possível ler ${path}: ${(err as Error).message}`, 65);
+  }
+  if (report?.schema !== 'residuo.report/v1' || !Array.isArray(report.steps)) throw new CliError(`${path} não é um relatório do Resíduo (residuo.report/v1)`, 65);
+  if (!report.verdict) throw new CliError(`${path} não tem veredito`, 65);
+
+  const model = opt.model ?? process.env.RESIDUO_AI_MODEL ?? DEFAULT_AI_MODEL;
+  console.error(`enviando o relatório de ${report.run.id} à API da Anthropic (${model})…`);
+  try {
+    const summary = await summarizeReport(report, {
+      apiKey,
+      model,
+      ...(process.env.RESIDUO_AI_BASE_URL ? { baseURL: process.env.RESIDUO_AI_BASE_URL } : {}),
+    });
+    console.log(opt.json ? JSON.stringify(summary, null, 2) : renderAiSummaryMarkdown(summary).join('\n'));
+    return 0;
+  } catch (err) {
+    if (err instanceof AiSummaryRejected || err instanceof AiServiceError) throw new CliError(err.message, 69);
+    throw err;
+  }
 }
 
 function cmdScenarios(): number {
@@ -350,6 +398,8 @@ async function main(): Promise<number> {
       return cmdScenarios();
     case 'schema':
       return cmdSchema();
+    case 'summarize':
+      return cmdSummarize();
     default:
       throw new CliError(`comando desconhecido: ${cmd}\n\n${HELP}`);
   }

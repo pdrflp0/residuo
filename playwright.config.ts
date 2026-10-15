@@ -19,6 +19,14 @@ export default defineConfig({
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } }],
   webServer: [
     {
+      // substitui a API da Anthropic no teste do resumo com IA
+      command: 'npx tsx tests/support/anthropic-stub.ts',
+      url: 'http://127.0.0.1:4199/health',
+      env: { STUB_PORT: '4199' },
+      reuseExistingServer: false,
+      timeout: 30_000,
+    },
+    {
       command: 'npm run start -w @residuo/reference-service',
       url: 'http://127.0.0.1:4110/health',
       env: { TARGET_DATABASE_URL: `${DB}/residuo_target_e2e`, REFERENCE_PORT: '4110' },
@@ -28,7 +36,13 @@ export default defineConfig({
     {
       command: 'npm run start -w @residuo/api',
       url: 'http://127.0.0.1:4010/api/health',
-      env: { LAB_DATABASE_URL: `${DB}/residuo_lab_e2e`, REFERENCE_SERVICE_URL: 'http://127.0.0.1:4110', API_PORT: '4010' },
+      env: {
+        LAB_DATABASE_URL: `${DB}/residuo_lab_e2e`,
+        REFERENCE_SERVICE_URL: 'http://127.0.0.1:4110',
+        API_PORT: '4010',
+        ANTHROPIC_API_KEY: 'e2e-test-key',
+        RESIDUO_AI_BASE_URL: 'http://127.0.0.1:4199',
+      },
       reuseExistingServer: false,
       timeout: 60_000,
     },

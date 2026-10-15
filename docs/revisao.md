@@ -18,3 +18,9 @@ Depois da implementação, outro agente de IA revisou o código só por leitura,
 Também foram removidos dois testes que não podiam falhar (um testava só o helper; outro verificava um campo que a validação já descarta) e ajustados detalhes do relatório: linha de reprodução com `--timeout`, quebras de linha escapadas e um aviso no teste de regressão sugerido.
 
 Áreas sem achados relevantes: ordem dos locks no consumidor protegido (sem deadlock), SQL parametrizado, reset preso ao prefixo `rsd-`, ausência de URL de alvo arbitrária.
+
+## Nível 3: teste instável que era uma corrida de verdade
+
+Ao repetir a suíte, o teste "pedidos simultâneos compartilham uma chamada ao modelo" falhou uma vez em cerca de dez. Não era ruído. O segundo pedido lia o banco, o primeiro terminava inteiro (chamada, gravação e limpeza do registro de pedido em andamento) e só então o segundo seguia: sem resumo salvo na leitura dele e sem pedido em andamento, chamava o modelo de novo. Em produção, isso é pagar duas vezes pelo mesmo resumo.
+
+A correção registra o pedido em andamento **antes** de ler o banco ([ai-summaries.ts](../apps/api/src/ai-summaries.ts)). Um segundo pedido ou compartilha o primeiro, ou chega depois da gravação e encontra o resumo salvo. Depois disso, a suíte passou em 18 repetições seguidas.

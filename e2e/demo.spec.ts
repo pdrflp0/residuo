@@ -52,6 +52,17 @@ test('demo: executa, localiza o reaparecimento, exporta e compara com o modo pro
   expect(jsErrors).toEqual([]);
   await shared.close();
 
+  // resumo com IA (API substituída por um stub local): cita etapas e cada citação leva à evidência
+  const ai = page.getByRole('region', { name: 'Resumo com IA' });
+  await ai.getByRole('button', { name: 'Gerar resumo' }).click();
+  await expect(ai).toContainText('A edição retida recriou o registro depois da exclusão confirmada.');
+  await expect(verdict).toContainText('Violação: o registro excluído voltou');
+  await ai.getByRole('listitem').filter({ hasText: 'upsert' }).getByRole('button', { name: 'Ver a evidência da etapa 8' }).click();
+  await expect(page.getByRole('region', { name: 'Evidência da etapa 8' })).toBeVisible();
+  const withAi = (await (await request.get(`http://127.0.0.1:4010/api/runs/${runId}/report.json`)).json()) as ReportV1;
+  expect(withAi.aiSummary?.verdict).toBe('VIOLATION');
+  expect(withAi.verdict).toEqual(api.run.verdict);
+
   // repetir no modo protegido e comparar
   await page.getByRole('button', { name: 'Repetir em guarded e comparar' }).click();
   await expect(page).toHaveURL(new RegExp(`#/compare/${runId}/run_[a-f0-9]{10}$`));

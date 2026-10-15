@@ -1,5 +1,5 @@
 import { Inject, Injectable, type OnApplicationShutdown } from '@nestjs/common';
-import type { Run, RunStatus, StepObservation, Verdict } from '@residuo/contracts';
+import type { AiSummary, Run, RunStatus, StepObservation, Verdict } from '@residuo/contracts';
 import type pg from 'pg';
 import { inTransaction } from './db';
 
@@ -96,6 +96,20 @@ export class LabStore implements OnApplicationShutdown {
   async getSteps(runId: string): Promise<StepObservation[]> {
     const { rows } = await this.pool.query(`SELECT * FROM step_observations WHERE run_id = $1 ORDER BY seq`, [runId]);
     return rows.map(toStep);
+  }
+
+  async getAiSummary(runId: string): Promise<AiSummary | undefined> {
+    const { rows } = await this.pool.query(`SELECT summary FROM ai_summaries WHERE run_id = $1`, [runId]);
+    return rows[0]?.summary;
+  }
+
+  /** Um resumo por execução; gerar de novo substitui o anterior. */
+  async saveAiSummary(s: AiSummary): Promise<void> {
+    await this.pool.query(
+      `INSERT INTO ai_summaries (run_id, model, summary, created_at) VALUES ($1, $2, $3, $4)
+       ON CONFLICT (run_id) DO UPDATE SET model = EXCLUDED.model, summary = EXCLUDED.summary, created_at = EXCLUDED.created_at`,
+      [s.runId, s.model, s, s.createdAt],
+    );
   }
 
   async listRuns(limit: number): Promise<Run[]> {

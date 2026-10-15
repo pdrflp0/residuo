@@ -4,11 +4,12 @@ export { SCENARIOS, getScenario, summarizeScenario, type Scenario, type Scenario
 export { DEFAULT_SEED, syntheticData, mulberry32 } from './seed';
 export { describeStep, type StepNarrative, type Tone } from './narrative';
 export { compareRuns } from './compare';
-export { buildReport, renderMarkdown, regressionTest, ENGINE_VERSION, ENGINE_LIMITS } from './report';
+export { buildReport, renderMarkdown, renderAiSummaryMarkdown, regressionTest, ENGINE_VERSION, ENGINE_LIMITS } from './report';
 export { sanitize } from './sanitize';
 export { ReferenceHttpAdapter, REFERENCE_ADAPTER_VERSION } from './adapters/reference-http';
 export { ConfigHttpAdapter, CONFIG_ADAPTER_VERSION } from './adapters/config-http';
 export { render, renderPath, extract, lookup } from './adapters/template';
 export { requiredCapabilities, missingCapabilities, missingRequirements, requiredPoints, STEP_CAPABILITY } from './capabilities';
-export { exploreOrders, scenarioForOrder, allOrders, isValidOrder, EXPLORE_ACTIONS, type ExploreAction, type ExploreResult, type OrderRun } from './explore';
+export { exploreOrders, exploreActions, scenarioForOrder, allOrders, isValidOrder, EXPLORE_ACTIONS, MAX_CLIENTS, type ExploreAction, type ExploreResult, type OrderRun } from './explore';
 export { renderHtml } from './report-html';
+export { summarizeReport, summaryPrompt, summaryInput, checkSummary, AiSummaryRejected, AiServiceError, DEFAULT_AI_MODEL, SUMMARY_SYSTEM, type SummaryOptions } from './ai-summary';

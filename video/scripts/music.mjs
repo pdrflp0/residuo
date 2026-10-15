@@ -1,16 +1,30 @@
 /**
  * Trilha original, sintetizada do zero (sem samples, sem copyright de terceiros).
- * Ambiente calmo em Lá menor, 90 BPM, com pontos de sincronia com o vídeo:
+ * Ambiente calmo em Lá menor, 90 BPM, com pontos de sincronia com cada vídeo.
+ *
+ * Vídeo de apresentação (intro):
  *   3,3 s  impacto em "Ele voltou."      20,5 s  o arpejo entra (apresentação do Resíduo)
  *   28 s   batida suave (demo)           42,9 s  impacto leve (etapa 9: g1 voltou)
  *   72,5 s encerramento, só acordes      79 s    fim
+ * Vídeo do nível 3 (l3):
+ *   3,2 s  impacto em "ainda aqui"       15 s / 24,2 s  impactos leves (backup e cache reaparecem)
+ *   31,5 s batida suave (a correção)     70,5 s encerramento   77 s fim
  *
- *   npm run music   →  public/audio/music.wav
+ *   npm run music      →  public/audio/music.wav
+ *   npm run music:l3   →  public/audio/music-l3.wav
  */
 import { mkdir, writeFile } from 'node:fs/promises';
 
+const PROFILES = {
+  intro: { out: 'music.wav', dur: 79, bass: [5, 74], arp: [20.5, 72.5], beat: [28, 72.5], hits: [[2.0, 3.33, 0.5, 0.3], [41.9, 42.93, 0.22, 0.15]], fadeFrom: 75.5 },
+  l3: { out: 'music-l3.wav', dur: 77, bass: [5.5, 72], arp: [5.5, 70.5], beat: [31.5, 70.5], hits: [[2.2, 3.2, 0.45, 0.26], [14.0, 15.0, 0.22, 0.15], [23.4, 24.2, 0.16, 0.11]], fadeFrom: 73.5 },
+};
+const profileName = process.argv[2] ?? 'intro';
+const P = PROFILES[profileName];
+if (!P) throw new Error(`perfil desconhecido: ${profileName} (use ${Object.keys(PROFILES).join(' | ')})`);
+
 const SR = 44100;
-const DUR = 79;
+const DUR = P.dur;
 const N = SR * DUR;
 const BEAT = 60 / 90;
 const BAR = BEAT * 4;
@@ -71,7 +85,7 @@ for (let c = 0; c * CHORD_LEN < DUR; c++) {
 }
 
 // ---------- baixo (tempos 1 e 3, a partir da história) ----------
-for (let t = Math.ceil(5 / (BEAT * 2)) * BEAT * 2; t < 74; t += BEAT * 2) {
+for (let t = Math.ceil(P.bass[0] / (BEAT * 2)) * BEAT * 2; t < P.bass[1]; t += BEAT * 2) {
   const f = hz(chordAt(t).bass);
   const start = Math.floor(t * SR);
   for (let k = 0; k < SR * 1.3; k++) {
@@ -85,8 +99,7 @@ for (let t = Math.ceil(5 / (BEAT * 2)) * BEAT * 2; t < 74; t += BEAT * 2) {
 }
 
 // ---------- arpejo (colcheias, a partir de 20,5 s) ----------
-const ARP_START = 20.5;
-const ARP_END = 72.5;
+const [ARP_START, ARP_END] = P.arp;
 const VEL = [1, 0.55, 0.8, 0.55, 0.9, 0.55, 0.75, 0.6];
 for (let n = 0, t = Math.ceil(ARP_START / (BEAT / 2)) * (BEAT / 2); t < ARP_END; t += BEAT / 2, n++) {
   const chord = chordAt(t);
@@ -123,8 +136,7 @@ for (let n = 0, t = Math.ceil(ARP_START / (BEAT / 2)) * (BEAT / 2); t < ARP_END;
 }
 
 // ---------- batida suave e chocalho (demo até o fim) ----------
-const BEAT_START = 28;
-const BEAT_END = 72.5;
+const [BEAT_START, BEAT_END] = P.beat;
 for (let t = Math.ceil(BEAT_START / BEAT) * BEAT, n = 0; t < BEAT_END; t += BEAT, n++) {
   const start = Math.floor(t * SR);
   if (n % 2 === 0) {
@@ -182,10 +194,10 @@ function impact(t0, amp) {
     add(sendR, start + k, s * 0.6);
   }
 }
-riser(2.0, 3.33, 0.5);
-impact(3.33, 0.3);
-riser(41.9, 42.93, 0.22);
-impact(42.93, 0.15);
+for (const [t0, t1, riseAmp, hitAmp] of P.hits) {
+  riser(t0, t1, riseAmp);
+  impact(t1, hitAmp);
+}
 
 // ---------- reverb (Schroeder simples) ----------
 function reverb(input, combMs, apMs) {
@@ -229,7 +241,7 @@ for (let i = 0; i < N; i++) {
 let peak = 0;
 for (let i = 0; i < N; i++) {
   const t = i / SR;
-  const fade = Math.min(1, t / 0.8) * (t > 75.5 ? Math.max(0, (DUR - t) / 3.5) : 1);
+  const fade = Math.min(1, t / 0.8) * (t > P.fadeFrom ? Math.max(0, (DUR - t) / (DUR - P.fadeFrom)) : 1);
   L[i] = Math.tanh(L[i] * fade * 1.2);
   R[i] = Math.tanh(R[i] * fade * 1.2);
   peak = Math.max(peak, Math.abs(L[i]), Math.abs(R[i]));
@@ -258,5 +270,5 @@ header.writeUInt32LE(data.length, 40);
 
 const dir = new URL('../public/audio/', import.meta.url).pathname;
 await mkdir(dir, { recursive: true });
-await writeFile(`${dir}music.wav`, Buffer.concat([header, data]));
-console.log(`trilha gerada: public/audio/music.wav (${DUR}s, pico normalizado)`);
+await writeFile(`${dir}${P.out}`, Buffer.concat([header, data]));
+console.log(`trilha gerada: public/audio/${P.out} (${DUR}s, pico normalizado)`);

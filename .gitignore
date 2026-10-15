@@ -13,4 +13,4 @@ video/node_modules/
 video/out/
 video/.env.local
 video/public/audio/narration-*/
-video/public/audio/music.wav
+video/public/audio/music*.wav

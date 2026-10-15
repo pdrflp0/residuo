@@ -62,6 +62,10 @@ docker compose --profile full up --build   # http://localhost:4000
 
 ## Outros jeitos de um registro voltar (nível 3)
 
+[![Vídeo do nível 3 (76 s, narrado): clique para assistir](docs/img/video-nivel3-capa.png)](docs/media/residuo-nivel3.mp4)
+
+▶ [Assistir ao vídeo do nível 3 (76 s, narrado)](docs/media/residuo-nivel3.mp4): backup, cache e busca, a correção, o relatório HTML, a exploração com 3 clientes e a IA que explica sem decidir. Também foi feito a partir de capturas reais.
+
 Além da edição atrasada, o Resíduo reproduz dois caminhos comuns de "ressurreição":
 
 | Cenário | O que acontece no modo vulnerável | Correção no modo protegido |
@@ -69,9 +73,15 @@ Além da edição atrasada, o Resíduo reproduz dois caminhos comuns de "ressurr
 | `backup-restore-after-delete` | Um backup antigo é restaurado e traz de volta o que foi apagado depois dele | Reaplica o registro de exclusões logo após o restore |
 | `derived-data-after-delete` | O registro some do banco, mas continua no cache e no índice de busca | Invalida cache e índice na mesma transação da exclusão |
 
+![Cache e busca no modo vulnerável: o banco diz 404, mas o cache e o índice ainda mostram g1](docs/img/nivel3-cache.png)
+
 Para o segundo caso, o Resíduo vigia **vários pontos de leitura** (banco, cache, índice) e diz em qual o dado sobreviveu. Quando nenhuma escrita explica o reaparecimento, a causa é classificada como **"dado derivado não invalidado"**, em vez de culpar a operação errada.
 
 Cada execução também pode ser exportada como **relatório HTML de arquivo único**: linha do tempo clicável, evidência HTTP e veredito, sem nenhum recurso externo. Dá para anexar numa issue ou num PR e mostrar o bug a quem não tem o Resíduo instalado. Ele é gerado pela interface ou por `residuo run --report <pasta>`.
+
+**Resumo com IA (opcional).** Com `ANTHROPIC_API_KEY` definida na API, cada execução ganha um botão **Gerar resumo**: um modelo Claude explica o que aconteceu em linguagem simples e **cita as etapas** que sustentam cada afirmação. Cada citação é um botão que leva à evidência. A IA não decide nada. O resumo só é aceito se repetir o veredito do avaliador, se toda afirmação tiver citação, se toda citação apontar para uma etapa que existe e, havendo violação, se citar a leitura em que ela apareceu. Se não passar, é descartado e o motivo aparece. O relatório vai ao modelo como dado (as respostas do alvo podem conter texto tentando dar instruções), e o resumo fica numa tabela própria, separado do veredito. Sem a chave, o recurso fica desligado e o resto funciona igual. Pela CLI: `residuo summarize relatorio.json`.
+
+**Mais clientes na exploração.** `residuo explore --clients 3` simula três clientes offline editando a mesma versão: são 60 ordens de entrega (até 4 clientes, 360 ordens) e a falha continua reduzida à sequência mínima.
 
 ## Testar o seu próprio sistema (nível 2)
 
@@ -81,6 +91,7 @@ Descreva o seu sistema num `residuo.json`: como criar, editar, apagar e ler, e o
 npm run residuo -- check   --config residuo.json   # valida e mostra quais cenários o seu sistema suporta
 npm run residuo -- run     --config residuo.json   # 0 = ok · 1 = VIOLATION · 2 = INCONCLUSIVE
 npm run residuo -- explore --config residuo.json   # testa 12 ordens de entrega e reduz a falha à sequência mínima
+npm run residuo -- explore --config residuo.json --clients 3   # 3 clientes offline: 60 ordens
 ```
 
 O exemplo completo é o [examples/notes-sync](examples/notes-sync), uma API de notas com sincronização offline, outros nomes de campo e um bug ligável por tenant. Para ele, `explore` encontra 9 ordens que violam e reduz a falha a `exclusão → liberar edição 1`. O guia está em [docs/integracao.md](docs/integracao.md), e o schema do arquivo, para autocomplete, em [schema/residuo.schema.json](schema/residuo.schema.json).
@@ -114,10 +125,12 @@ npm run typecheck
 | CLI como processo real: códigos de saída, `--json`, relatórios, configuração inválida, recusa de alvo remoto, schema sincronizado | [cli.integration.test.ts](tests/level2/cli.integration.test.ts) |
 | Backup restaurado e cache/índice: vulnerável viola com a causa certa; protegido reaplica exclusões e invalida derivados | [scenarios.integration.test.ts](apps/reference-service/test/scenarios.integration.test.ts) |
 | Relatório HTML: sem recursos externos, imune a injeção pelos dados do alvo, abre e navega no navegador | [report.test.ts](packages/engine/test/report.test.ts) + [e2e/demo.spec.ts](e2e/demo.spec.ts) |
+| Exploração com 3 clientes: 60 ordens, mesma sequência mínima; na correção, só a primeira edição entregue é aceita | [config-adapter.integration.test.ts](tests/level2/config-adapter.integration.test.ts) |
+| Resumo com IA: descartado se contradiz o veredito, cita etapa inexistente ou não cita a violação; o relatório vai como dado; a URL não vem do ambiente; o veredito não muda | [ai-summary.test.ts](packages/engine/test/ai-summary.test.ts) + [api.integration.test.ts](apps/api/test/api.integration.test.ts) + [e2e/demo.spec.ts](e2e/demo.spec.ts) |
 | Ponta a ponta: demo → evidência → causa → exportação idêntica à API → comparação | [e2e/demo.spec.ts](e2e/demo.spec.ts) |
 | Navegação por teclado e preferência por movimento reduzido | idem |
 
-Não há mocks do alvo: os testes de integração sobem o serviço de referência (NestJS + PostgreSQL) numa porta livre e o engine fala HTTP com ele. Para conferir que os testes detectam erros, introduzi defeitos de propósito e confirmei que algum teste falhava: sem a checagem de marcador de exclusão (2 testes falharam), com a fronteira "depois da confirmação" deslocada no avaliador (1 falhou) e sem o lock por identidade no consumidor (o teste de corrida falhou em 3 de 3 rodadas).
+Não há mocks do alvo: os testes de integração sobem o serviço de referência (NestJS + PostgreSQL) numa porta livre e o engine fala HTTP com ele. A única coisa substituída nos testes é a API da Anthropic (por um servidor local que responde no mesmo formato), para não depender de rede, chave nem custo. Para conferir que os testes detectam erros, introduzi defeitos de propósito e confirmei que algum teste falhava: sem a checagem de marcador de exclusão (2 testes falharam), com a fronteira "depois da confirmação" deslocada no avaliador (1 falhou), sem o lock por identidade no consumidor (o teste de corrida falhou em 3 de 3 rodadas) e, no resumo com IA, sem a checagem de veredito (3 falharam), sem a exigência de citar a violação (1 falhou) e sem o escape do relatório no prompt (1 falhou).
 
 Uma revisão independente, feita por outro agente de IA, encontrou lacunas reais, todas corrigidas e cobertas por testes. Estão listadas em [docs/revisao.md](docs/revisao.md).
 
@@ -138,7 +151,7 @@ apps/api                NestJS: execuções, persistência (banco lab), relatór
 apps/reference-service  NestJS: o alvo testado, modos vulnerable/guarded (banco target)
 packages/engine         orquestrador, avaliador de invariantes, adapter HTTP, relatórios
 packages/contracts      tipos, contrato do adapter e schema do residuo.json
-packages/cli            CLI residuo: check, run, explore (nível 2)
+packages/cli            CLI residuo: check, run, explore, summarize
 examples/notes-sync     app de exemplo integrado via residuo.json
 ```
 
@@ -154,15 +167,16 @@ O avaliador e o alvo ficam em bancos separados: tudo o que o Resíduo sabe do al
 - [docs/exemplo-relatorio.md](docs/exemplo-relatorio.md) e [.json](docs/exemplo-relatorio.json) — relatório real exportado
 - [docs/revisao.md](docs/revisao.md) — o que a revisão independente encontrou e como foi corrigido
 - [docs/roadmap.md](docs/roadmap.md) — níveis 2 e 3, validação com desenvolvedores, publicação
-- [video/](video/) — o vídeo de apresentação como código (Remotion)
+- [video/](video/) — os vídeos (apresentação e nível 3) como código (Remotion)
 
 ## Limites (importante)
 
 - Mede **visibilidade pela API de leitura do alvo**. Ausência numa leitura não é apagamento físico de todas as cópias (réplicas, caches, backups, logs).
-- A ordem é controlada por barreiras explícitas: a reexecução reproduz **este interleaving**, não a temporização de uma corrida real. A semente gera só os dados sintéticos; outras ordens de entrega não são exploradas (nível 2).
+- A ordem é controlada por barreiras explícitas: a reexecução reproduz **este interleaving**, não a temporização de uma corrida real. A semente gera só os dados sintéticos; outras ordens de entrega são exploradas pelo `residuo explore`, não por uma execução.
 - A interface web testa só o serviço de referência. Sistemas de terceiros são testados pela CLI, que por padrão recusa alvos fora de `localhost` (`--allow-remote` existe para ambientes de teste autorizados).
 - Integrar exige trabalho do lado do sistema testado: mapear operações e oferecer ganchos de teste para segurar e soltar entregas. Não é automático.
-- `explore` cobre 12 ordens de um conjunto pequeno de ações, e não todas as concorrências possíveis.
+- `explore` cobre de 3 a 360 ordens (1 a 4 clientes) de um conjunto pequeno de ações, e não todas as concorrências possíveis.
+- O resumo com IA é opcional e envia o relatório sanitizado da execução à API da Anthropic. A conferência garante o veredito e as citações, não a interpretação: o texto pode errar, e a evidência continua sendo a fonte.
 - Os pontos de leitura vigiados são os declarados (banco, cache, índice). Réplicas, logs e armazenamento físico ficam de fora.
 - A política "abrir conflito para revisão humana" não está implementada: no modo `guarded`, a edição conflitante é rejeitada com resultado explícito.
 - Não é certificação de privacidade, conformidade legal nem exclusão criptograficamente comprovada.
@@ -186,6 +200,6 @@ Stack: TypeScript, NestJS 12, React 19 + Vite, PostgreSQL 18, Vitest, Playwright
 
 Level 2 lets anyone test their own system: describe it in a `residuo.json` (operations, fact extraction, test hooks to hold/release deliveries) and run the `residuo` CLI (`check`, `run`, `explore`) locally or in CI, with exit codes 0/1/2. `explore` runs 12 delivery orders and shrinks a failure to the minimal reproducing sequence. A generic-adapter parity test proves the config-driven adapter matches the hand-written one.
 
-Level 3 adds two more resurrection paths — an old backup being restored (fixed by re-applying the deletion log after restore) and stale derived data in a cache or search index (multiple observation points; a `stale-derived` attribution instead of blaming a write) — plus a self-contained, injection-safe HTML report you can attach to an issue.
+Level 3 adds two more resurrection paths — an old backup being restored (fixed by re-applying the deletion log after restore) and stale derived data in a cache or search index (multiple observation points; a `stale-derived` attribution instead of blaming a write) — plus a self-contained, injection-safe HTML report you can attach to an issue. `explore --clients N` simulates up to 4 offline clients (360 orders). An optional AI summary (Claude, via the Anthropic API) explains a run in plain language and cites the steps behind every claim; it never decides anything: it is discarded unless it repeats the evaluator's verdict, every citation points to an existing step and the violation's read step is cited.
 
-Run it: `npm install && npm run db:up && npm run dev`, then open http://localhost:5173. Limits: it measures visibility through the target's read API only, replays one controlled interleaving (not real-time races), and targets only the local reference service in v1.
+Run it: `npm install && npm run db:up && npm run dev`, then open http://localhost:5173. Limits: it measures visibility through the target's read API only and replays controlled interleavings (not real-time races). The web UI targets the local reference service; other systems are tested through the CLI.

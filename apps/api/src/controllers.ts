@@ -3,6 +3,7 @@ import { Mode, type TargetAdapter } from '@residuo/contracts';
 import { buildReport, compareRuns, DEFAULT_SEED, ENGINE_VERSION, regressionTest, renderHtml, renderMarkdown, SCENARIOS, summarizeScenario } from '@residuo/engine';
 import type { Response } from 'express';
 import { z } from 'zod';
+import { AiSummaries } from './ai-summaries';
 import { LabStore } from './lab-store';
 import { RunExecutor, TARGET_ADAPTER } from './run-executor';
 
@@ -20,6 +21,7 @@ export class MetaController {
   constructor(
     @Inject(TARGET_ADAPTER) private readonly adapter: TargetAdapter,
     @Inject(REFERENCE_URL) private readonly referenceUrl: string,
+    @Inject(AiSummaries) private readonly ai: AiSummaries,
   ) {}
 
   @Get('health')
@@ -36,7 +38,7 @@ export class MetaController {
     } catch {
       /* alvo fora do ar: a interface mostra o aviso */
     }
-    return { engineVersion: ENGINE_VERSION, adapter: this.adapter.describe(), reference };
+    return { engineVersion: ENGINE_VERSION, adapter: this.adapter.describe(), reference, ai: this.ai.status() };
   }
 
   @Get('scenarios')
@@ -50,6 +52,7 @@ export class RunsController {
   constructor(
     @Inject(RunExecutor) private readonly executor: RunExecutor,
     @Inject(LabStore) private readonly store: LabStore,
+    @Inject(AiSummaries) private readonly ai: AiSummaries,
   ) {}
 
   @Post()
@@ -121,6 +124,16 @@ export class RunsController {
     res.setHeader('content-type', 'text/plain; charset=utf-8');
     res.setHeader('content-disposition', `attachment; filename="residuo-${id}.regression.test.ts"`);
     return regressionTest(report);
+  }
+
+  /**
+   * Resumo opcional escrito por IA, citando as etapas. Envia o relatório sanitizado à API da Anthropic.
+   * Não altera o veredito. Já existindo, devolve o salvo (refresh=1 gera de novo).
+   */
+  @Post(':id/summary')
+  @HttpCode(200)
+  summary(@Param('id') id: string, @Query('refresh') refresh?: string) {
+    return this.ai.generate(runId(id), refresh === '1');
   }
 
   /** Reset restrito ao namespace desta execução no serviço de referência. */

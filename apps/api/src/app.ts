@@ -8,6 +8,7 @@ import type { TargetAdapter } from '@residuo/contracts';
 import { ReferenceHttpAdapter } from '@residuo/engine';
 import type { NextFunction, Request, Response } from 'express';
 import pg from 'pg';
+import { AI_CONFIG, type AiConfig, AiSummaries } from './ai-summaries';
 import { ComparisonsController, MetaController, REFERENCE_URL, RunsController } from './controllers';
 import { ensureDatabase, LAB_SCHEMA } from './db';
 import { LAB_POOL, LabStore } from './lab-store';
@@ -20,6 +21,8 @@ export interface ApiOptions {
   adapter?: TargetAdapter;
   webDist?: string;
   logger?: boolean;
+  /** resumo com IA (opcional); sem apiKey fica desligado */
+  ai?: AiConfig;
 }
 
 export async function createApiApp(opts: ApiOptions): Promise<NestExpressApplication> {
@@ -36,8 +39,10 @@ export async function createApiApp(opts: ApiOptions): Promise<NestExpressApplica
       { provide: LAB_POOL, useValue: pool },
       { provide: TARGET_ADAPTER, useValue: adapter },
       { provide: REFERENCE_URL, useValue: opts.referenceServiceUrl },
+      { provide: AI_CONFIG, useValue: opts.ai ?? {} },
       LabStore,
       RunExecutor,
+      AiSummaries,
     ],
   })
   class ApiModule {}

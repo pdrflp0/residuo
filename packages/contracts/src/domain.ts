@@ -9,6 +9,7 @@
  *   revisão-base a partir da qual foi preparada.
  */
 import { z } from 'zod';
+import type { AiSummary } from './ai-summary';
 
 /** Modos do serviço de referência. */
 export const MODES = ['vulnerable', 'guarded'] as const;
@@ -253,6 +254,8 @@ export interface RunDetail {
   run: Run;
   scenario: ScenarioSummary;
   steps: StepObservation[];
+  /** resumo opcional escrito por IA; não participa do veredito */
+  aiSummary?: AiSummary;
 }
 
 export interface StepDiff {
@@ -282,4 +285,6 @@ export interface ReportV1 {
   verdict?: Verdict;
   limits: string[];
   reproduce: { api: { method: 'POST'; path: '/api/runs'; body: Record<string, unknown> }; cli: string };
+  /** presente só se alguém gerou o resumo com IA para esta execução */
+  aiSummary?: AiSummary;
 }

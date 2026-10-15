@@ -3,6 +3,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Download, FastForward, GitCompare
 import { useEffect, useRef, useState } from 'react';
 import { advanceRun, counterpartRun, getRun, isFinished, regressionUrl, replayRun, reportUrl } from '../api';
 import { go, usePlayback, useResource } from '../hooks';
+import { AiSummaryPanel } from './AiSummaryPanel';
 import { EntityCards } from './EntityCards';
 import { Evidence } from './Evidence';
 import { Timeline } from './Timeline';
@@ -202,6 +203,8 @@ export function RunView({ id, motion }: { id: string; motion: boolean }) {
       <div ref={evidenceRef} style={{ scrollMarginTop: 16 }}>
         <Evidence step={steps.find((s) => s.seq === selected && s.seq <= revealed)} scenario={scenario} verdict={run.verdict} onJump={jump} />
       </div>
+
+      <AiSummaryPanel run={run} {...(data.aiSummary ? { summary: data.aiSummary } : {})} onJump={jump} onChange={reload} />
 
       <section className="panel panel-pad" style={{ marginTop: 18 }} aria-label="Exportar">
         <div className="section-head">

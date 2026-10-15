@@ -1,4 +1,5 @@
 {
   "extends": "./tsconfig.base.json",
+  "compilerOptions": { "lib": ["ESNext", "DOM"] },
   "include": ["e2e", "tests", "vitest.config.ts", "playwright.config.ts"]
 }

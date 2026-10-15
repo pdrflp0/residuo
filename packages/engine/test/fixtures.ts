@@ -2,7 +2,9 @@
  * Construtor de observações para testar o avaliador sem rede.
  * Os fatos imitam o que o adapter extrai de respostas reais do serviço de referência.
  */
-import type { Lane, StepFacts, StepKind, StepObservation, StepStatus } from '@residuo/contracts';
+import type { Lane, RunDetail, StepFacts, StepKind, StepObservation, StepStatus } from '@residuo/contracts';
+import { evaluate } from '../src/evaluate';
+import { getScenario, summarizeScenario } from '../src/scenarios';
 
 const LANE: Record<StepKind, Lane> = {
   create: 'api',
@@ -66,4 +68,27 @@ export class Trace {
   absentAt(point: string) {
     return this.add('inspect', { entityId: 'item-17', visible: false, observationPoint: point });
   }
+}
+
+/** Detalhe de execução do cenário principal, com o veredito calculado pelo avaliador. */
+export function detail(mode: 'vulnerable' | 'guarded', trace: Trace, id = `run_${mode}`): RunDetail {
+  const scenario = getScenario('held-update-after-delete')!;
+  const verdict = evaluate({ policy: 'delete-wins', steps: trace.steps });
+  return {
+    scenario: summarizeScenario(scenario),
+    steps: trace.steps,
+    run: {
+      id,
+      scenarioId: scenario.id,
+      scenarioVersion: scenario.version,
+      engineVersion: '0.1.0',
+      adapter: { name: 'fixture', version: '0', capabilities: [], points: ['primary'], observationPoints: [], limits: ['limite do adapter'] },
+      config: { scenarioId: scenario.id, scenarioVersion: scenario.version, mode, policy: 'delete-wins', seed: 1200, fault: 'none', stepMode: 'auto', timeoutMs: 3000 },
+      namespace: `rsd-${id}`,
+      entityId: 'item-17',
+      status: 'completed',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      verdict,
+    },
+  };
 }

@@ -126,11 +126,12 @@ export class RunExecutor implements OnApplicationBootstrap, BeforeApplicationShu
   async detail(id: string): Promise<RunDetail> {
     const run = await this.require(id);
     const scenario = getScenario(run.scenarioId);
-    const steps = await this.store.getSteps(id);
+    const [steps, aiSummary] = await Promise.all([this.store.getSteps(id), this.store.getAiSummary(id)]);
     return {
       run,
       steps,
       scenario: scenario && scenario.version === run.scenarioVersion ? summarizeScenario(scenario) : fallbackScenario(run, steps),
+      ...(aiSummary ? { aiSummary } : {}),
     };
   }
 

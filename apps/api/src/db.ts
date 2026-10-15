@@ -72,6 +72,14 @@ CREATE TABLE IF NOT EXISTS violations (
   evidence_seqs    int[] NOT NULL,
   PRIMARY KEY (run_id, idx)
 );
+
+-- resumo opcional escrito por IA: tabela própria, fora do veredito
+CREATE TABLE IF NOT EXISTS ai_summaries (
+  run_id      text PRIMARY KEY REFERENCES runs(id) ON DELETE CASCADE,
+  model       text NOT NULL,
+  summary     jsonb NOT NULL,
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
 `;
 
 export type Tx = pg.PoolClient;
