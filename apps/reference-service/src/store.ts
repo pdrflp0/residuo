@@ -40,8 +40,6 @@ export class TargetStore implements OnModuleDestroy {
     await this.pool.end();
   }
 
-  // ---------- namespaces ----------
-
   async createNamespace(ns: string, mode: Mode, fault: Fault): Promise<NamespaceRow> {
     const { rows } = await this.pool.query(
       `INSERT INTO namespaces (ns, mode, fault) VALUES ($1, $2, $3)
@@ -58,13 +56,10 @@ export class TargetStore implements OnModuleDestroy {
     return rows[0];
   }
 
-  /** Reset restrito: só apaga as linhas daquele namespace (cascade a partir de namespaces). */
   async deleteNamespace(ns: string): Promise<boolean> {
     const { rowCount } = await this.pool.query(`DELETE FROM namespaces WHERE ns = $1`, [ns]);
     return (rowCount ?? 0) > 0;
   }
-
-  // ---------- registros ----------
 
   async createItem(ns: string, id: string, data: Record<string, unknown>) {
     await this.getNamespace(ns);
@@ -110,7 +105,6 @@ export class TargetStore implements OnModuleDestroy {
       }
       await tx.query(`DELETE FROM items WHERE ns = $1 AND id = $2`, [ns, id]);
       if (space.mode === 'guarded') {
-        // invalidação na mesma transação: nenhum ponto derivado sobrevive à exclusão confirmada
         await tx.query(`DELETE FROM cache_entries WHERE ns = $1 AND id = $2`, [ns, id]);
         await tx.query(`DELETE FROM search_index WHERE ns = $1 AND id = $2`, [ns, id]);
       }
@@ -179,9 +173,6 @@ export class TargetStore implements OnModuleDestroy {
     });
   }
 
-  // ---------- dados derivados (nível 3) ----------
-
-  /** Leitura com cache: devolve a cópia em cache se houver; senão lê a fonte e guarda no cache. */
   async getCachedItem(ns: string, id: string) {
     await this.getNamespace(ns);
     const hit = await this.pool.query(`SELECT payload, cached_at FROM cache_entries WHERE ns = $1 AND id = $2`, [ns, id]);
@@ -203,8 +194,6 @@ export class TargetStore implements OnModuleDestroy {
     return { item: { id: r.id, generation: r.generation, revision: r.revision, title: r.title, lastWrittenBy: r.last_written_by } };
   }
 
-  // ---------- backup (nível 3) ----------
-
   async takeSnapshot(ns: string) {
     await this.getNamespace(ns);
     const snapshotId = shortId('snp');
@@ -218,11 +207,6 @@ export class TargetStore implements OnModuleDestroy {
     return { outcome: 'SNAPSHOT_TAKEN', snapshotId, items: rows[0].count };
   }
 
-  /**
-   * Restaura um backup: o estado volta a ser o do momento do backup.
-   * vulnerable: só isso — o que foi apagado depois do backup volta.
-   * guarded: depois de restaurar, reaplica o registro de exclusões (que fica fora do backup).
-   */
   async restoreSnapshot(ns: string, snapshotId: string) {
     const space = await this.getNamespace(ns);
     return inTransaction(this.pool, async (tx) => {
@@ -262,8 +246,6 @@ export class TargetStore implements OnModuleDestroy {
     });
   }
 
-  // ---------- cliente offline e fila ----------
-
   async prepareUpdate(ns: string, input: { id: string; generation: number; baseRevision: number; data: Record<string, unknown> }) {
     await this.getNamespace(ns);
     const deliveryId = shortId('dlv');
@@ -285,10 +267,6 @@ export class TargetStore implements OnModuleDestroy {
     return { deliveryId, entityId: rows[0].entity_id, status: rows[0].status };
   }
 
-  /**
-   * Libera uma entrega e devolve o resultado do consumidor na mesma resposta.
-   * É isso que faz da chamada uma barreira: quando ela retorna, o consumidor terminou.
-   */
   async consume(ns: string, deliveryId: string, kind: 'release' | 'redeliver') {
     const space = await this.getNamespace(ns);
     return inTransaction(this.pool, async (tx) => {

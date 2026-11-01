@@ -11,7 +11,6 @@ interface Props {
   onChange: () => void;
 }
 
-/** Resumo opcional escrito por IA. Só explica: o veredito exibido acima vem do avaliador. */
 export function AiSummaryPanel({ run, summary, onJump, onChange }: Props) {
   const about = useResource(getAbout, []);
   const [busy, setBusy] = useState(false);

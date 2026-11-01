@@ -1,9 +1,3 @@
-/**
- * residuo — CLI para testar um sistema com o Resíduo, local ou no CI.
- *
- * Códigos de saída: 0 = nenhuma violação observada (ou permitida pela política)
- *                   1 = VIOLATION   2 = INCONCLUSIVE   64 = uso incorreto   65 = residuo.json inválido
- */
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
@@ -148,7 +142,6 @@ async function readConfig(path: string): Promise<TargetConfig> {
   return parsed.data;
 }
 
-/** Testes do Resíduo criam, editam e apagam dados: por padrão, só em máquinas locais. */
 function guardHost(url: string) {
   const host = new URL(url).hostname;
   const local = ['localhost', '127.0.0.1', '::1', '[::1]'].includes(host) || host.endsWith('.localhost');
@@ -165,7 +158,7 @@ function pickScenarios(adapter: TargetAdapter): { run: Scenario[]; skipped: { sc
   if (opt.scenario && opt.scenario !== 'all') {
     const s = getScenario(opt.scenario);
     if (!s) throw new CliError(`cenário desconhecido: ${opt.scenario}. Disponíveis: ${SCENARIOS.map((x) => x.id).join(', ')}`);
-    return { run: [s], skipped: [] }; // escolhido explicitamente: roda mesmo sem capacidade (vira INCONCLUSIVE)
+    return { run: [s], skipped: [] };
   }
   const run: Scenario[] = [];
   const skipped: { scenario: Scenario; missing: string[] }[] = [];
@@ -338,7 +331,6 @@ async function cmdCheck(): Promise<number> {
   return 0;
 }
 
-/** Resumo com IA de um relatório já gerado. Envia o relatório (sanitizado) à API da Anthropic; não altera o veredito. */
 async function cmdSummarize(): Promise<number> {
   const path = positionals[1];
   if (!path) throw new CliError('informe o relatório: residuo summarize relatorio.json');

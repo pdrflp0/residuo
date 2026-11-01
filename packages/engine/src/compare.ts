@@ -1,9 +1,5 @@
 import type { RunComparison, RunDetail, StepDiff, StepObservation } from '@residuo/contracts';
 
-/**
- * Compara duas execuções do mesmo cenário. Só são "comparáveis" se cenário, versão, semente,
- * política e falha injetada forem iguais — assim a diferença observada vem do modo do alvo.
- */
 export function compareRuns(base: RunDetail, candidate: RunDetail): RunComparison {
   const a = base.run.config;
   const b = candidate.run.config;
@@ -30,7 +26,6 @@ export function compareRuns(base: RunDetail, candidate: RunDetail): RunCompariso
       title: (x ?? y)!.title,
       ...(bx ? { base: bx } : {}),
       ...(by ? { candidate: by } : {}),
-      // Só há diferença quando as duas execuções terminaram; etapa ainda não gravada não é "diferente".
       changed: bothDone && JSON.stringify(withoutSeq(bx)) !== JSON.stringify(withoutSeq(by)),
     };
   });

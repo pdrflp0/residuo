@@ -1,8 +1,3 @@
-/**
- * Estado dos cartões de entidade até a etapa revelada.
- * Deriva SÓ das observações gravadas e distingue o que o alvo relatou (escrita)
- * do que o observador viu (leitura).
- */
 import type { StepObservation, Verdict } from '@residuo/contracts';
 import type { Tone } from '@residuo/engine/narrative';
 
@@ -17,9 +12,7 @@ export interface CardState {
 
 export interface EntityCards {
   record: CardState;
-  /** cartão do meio: depende do cenário (edição pendente, backup ou dados derivados) */
   middle: { label: string; name: string; card: CardState };
-  /** mantido por compatibilidade: o estado da edição pendente */
   edit: CardState;
   deletion: CardState;
 }
@@ -70,7 +63,6 @@ export function deriveCards(steps: StepObservation[], revealed: number, verdict?
         const o = f.writeOutcome ?? '';
         const verb = s.kind === 'replay' ? 'reentregue' : 'entregue';
         if (o === 'UPSERT_INSERTED') {
-          // Ainda é só o relato do alvo; o tom de reaparecimento vem do veredito.
           const cause = verdict?.violations.some((v) => v.causedBySeq === s.seq) ?? false;
           const tone: Tone = cause ? 'reappeared' : 'neutral';
           cards.edit = { tone, state: `${verb}: alvo relata recriação`, sub: o, changedAt: s.seq };
@@ -127,7 +119,7 @@ export function deriveCards(steps: StepObservation[], revealed: number, verdict?
         if (f.observationPoint) {
           const violated = verdict?.violations.some((v) => v.observedAtSeq === s.seq || v.evidenceSeqs.includes(s.seq)) ?? false;
           derived.set(f.observationPoint, { visible: f.visible === true, violated });
-          break; // leituras derivadas não mudam o cartão do registro (fonte de verdade)
+          break;
         }
         if (!f.visible) {
           cards.record = {

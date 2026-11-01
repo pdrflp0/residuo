@@ -1,12 +1,3 @@
-/**
- * Orquestrador. Executa as etapas do cenário uma por vez, na ordem declarada.
- *
- * Por que a ordem é reproduzível: cada chamada ao adapter só retorna depois que o alvo
- * terminou a operação (a liberação de uma entrega devolve o resultado do consumidor, a
- * confirmação devolve o estado da exclusão). A próxima etapa só começa depois disso.
- * Não há sleep decidindo ordem. A barreira opcional `beforeStep` permite pausar entre
- * etapas (modo manual) sem mudar a sequência.
- */
 import {
   AdapterError,
   type AdapterResult,
@@ -26,7 +17,6 @@ export interface ExecuteOptions {
   config: ResolvedRunConfig;
   namespace: string;
   adapter: TargetAdapter;
-  /** barreira antes de cada etapa (modo manual); rejeitar aborta a execução */
   beforeStep?: (step: ScenarioStep, seq: number) => Promise<void>;
   onStep?: (obs: StepObservation) => void | Promise<void>;
   now?: () => Date;
@@ -79,8 +69,6 @@ export async function executeScenario(opts: ExecuteOptions): Promise<ExecutionRe
       continue;
     }
 
-    // A chamada ao alvo e a gravação da observação ficam separadas: se a gravação falhar,
-    // o erro sobe (execução interrompida) em vez de ser registrado como falha do alvo.
     let outcome: { status: StepStatus; result?: AdapterResult; error?: string };
     try {
       outcome = { status: 'ok', result: await withTimeout(runStep(step), call.timeoutMs) };
@@ -176,7 +164,6 @@ export async function executeScenario(opts: ExecuteOptions): Promise<ExecutionRe
       case 'inspect': {
         const point = step.params?.point;
         const r = point && point !== 'primary' ? await adapter.inspectEntity(namespace, id, call, point) : await adapter.inspectEntity(namespace, id, call);
-        // o ponto de leitura é registrado pelo engine, não depende do adapter lembrar
         return point && point !== 'primary' ? { ...r, facts: { ...r.facts, observationPoint: point } } : r;
       }
     }
@@ -189,7 +176,6 @@ function requireRef(map: Map<string, string>, stepId: string | undefined, what: 
   return value;
 }
 
-/** Rede de segurança: mesmo que um adapter ignore o timeout, o engine não fica preso. */
 async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   let timer: NodeJS.Timeout | undefined;
   const guard = new Promise<never>((_, reject) => {

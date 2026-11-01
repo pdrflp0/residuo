@@ -1,18 +1,3 @@
-/**
- * Trilha original, sintetizada do zero (sem samples, sem copyright de terceiros).
- * Ambiente calmo em Lá menor, 90 BPM, com pontos de sincronia com cada vídeo.
- *
- * Vídeo de apresentação (intro):
- *   3,3 s  impacto em "Ele voltou."      20,5 s  o arpejo entra (apresentação do Resíduo)
- *   28 s   batida suave (demo)           42,9 s  impacto leve (etapa 9: g1 voltou)
- *   72,5 s encerramento, só acordes      79 s    fim
- * Vídeo do nível 3 (l3):
- *   3,2 s  impacto em "ainda aqui"       15 s / 24,2 s  impactos leves (backup e cache reaparecem)
- *   31,5 s batida suave (a correção)     70,5 s encerramento   77 s fim
- *
- *   npm run music      →  public/audio/music.wav
- *   npm run music:l3   →  public/audio/music-l3.wav
- */
 import { mkdir, writeFile } from 'node:fs/promises';
 
 const PROFILES = {
@@ -31,9 +16,9 @@ const BAR = BEAT * 4;
 
 const L = new Float32Array(N);
 const R = new Float32Array(N);
-const sendL = new Float32Array(N); // envio para o reverb
+const sendL = new Float32Array(N);
 const sendR = new Float32Array(N);
-const arpL = new Float32Array(N); // arpejo passa pelo delay antes
+const arpL = new Float32Array(N);
 const arpR = new Float32Array(N);
 
 const hz = (m) => 440 * 2 ** ((m - 69) / 12);
@@ -45,17 +30,15 @@ function add(buf, i, v) {
   if (i >= 0 && i < N) buf[i] += v;
 }
 
-// ---------- harmonia ----------
 const CHORDS = [
-  { pad: [57, 60, 64, 67, 71], bass: 45, arp: [69, 72, 76, 79, 83, 79, 76, 72] }, // Am9
-  { pad: [53, 57, 60, 64, 67], bass: 41, arp: [65, 69, 72, 76, 79, 76, 72, 69] }, // Fmaj9
-  { pad: [55, 60, 64, 67, 71], bass: 48, arp: [67, 72, 76, 79, 83, 79, 76, 72] }, // Cmaj7/G
-  { pad: [52, 55, 59, 62, 67], bass: 40, arp: [64, 67, 71, 74, 79, 74, 71, 67] }, // Em7
+  { pad: [57, 60, 64, 67, 71], bass: 45, arp: [69, 72, 76, 79, 83, 79, 76, 72] },
+  { pad: [53, 57, 60, 64, 67], bass: 41, arp: [65, 69, 72, 76, 79, 76, 72, 69] },
+  { pad: [55, 60, 64, 67, 71], bass: 48, arp: [67, 72, 76, 79, 83, 79, 76, 72] },
+  { pad: [52, 55, 59, 62, 67], bass: 40, arp: [64, 67, 71, 74, 79, 74, 71, 67] },
 ];
 const CHORD_LEN = BAR * 2;
 const chordAt = (t) => CHORDS[Math.floor(t / CHORD_LEN) % CHORDS.length];
 
-// ---------- pad ----------
 for (let c = 0; c * CHORD_LEN < DUR; c++) {
   const chord = CHORDS[c % CHORDS.length];
   const t0 = c * CHORD_LEN;
@@ -84,7 +67,6 @@ for (let c = 0; c * CHORD_LEN < DUR; c++) {
   }
 }
 
-// ---------- baixo (tempos 1 e 3, a partir da história) ----------
 for (let t = Math.ceil(P.bass[0] / (BEAT * 2)) * BEAT * 2; t < P.bass[1]; t += BEAT * 2) {
   const f = hz(chordAt(t).bass);
   const start = Math.floor(t * SR);
@@ -98,7 +80,6 @@ for (let t = Math.ceil(P.bass[0] / (BEAT * 2)) * BEAT * 2; t < P.bass[1]; t += B
   }
 }
 
-// ---------- arpejo (colcheias, a partir de 20,5 s) ----------
 const [ARP_START, ARP_END] = P.arp;
 const VEL = [1, 0.55, 0.8, 0.55, 0.9, 0.55, 0.75, 0.6];
 for (let n = 0, t = Math.ceil(ARP_START / (BEAT / 2)) * (BEAT / 2); t < ARP_END; t += BEAT / 2, n++) {
@@ -117,7 +98,6 @@ for (let n = 0, t = Math.ceil(ARP_START / (BEAT / 2)) * (BEAT / 2); t < ARP_END;
     add(arpR, start + k, s * pan * 2);
   }
 }
-// delay pingue-pongue (colcheia pontuada) no arpejo
 {
   const d = Math.floor(BEAT * 0.75 * SR);
   const fb = 0.34;
@@ -135,7 +115,6 @@ for (let n = 0, t = Math.ceil(ARP_START / (BEAT / 2)) * (BEAT / 2); t < ARP_END;
   }
 }
 
-// ---------- batida suave e chocalho (demo até o fim) ----------
 const [BEAT_START, BEAT_END] = P.beat;
 for (let t = Math.ceil(BEAT_START / BEAT) * BEAT, n = 0; t < BEAT_END; t += BEAT, n++) {
   const start = Math.floor(t * SR);
@@ -157,7 +136,7 @@ for (let t = Math.ceil(BEAT_START / (BEAT / 2)) * (BEAT / 2), n = 0; t < BEAT_EN
   let prev = 0;
   for (let k = 0; k < SR * 0.05; k++) {
     const x = rnd();
-    const hp = x - prev; // passa-altas simples
+    const hp = x - prev;
     prev = x;
     const s = hp * Math.exp(-(k / SR) / 0.012) * v;
     add(L, start + k, s * 0.8);
@@ -165,12 +144,11 @@ for (let t = Math.ceil(BEAT_START / (BEAT / 2)) * (BEAT / 2), n = 0; t < BEAT_EN
   }
 }
 
-// ---------- subida + impacto ----------
 function riser(t0, t1, amp) {
   let lp = 0;
   for (let i = Math.floor(t0 * SR); i < Math.floor(t1 * SR); i++) {
     const p = (i / SR - t0) / (t1 - t0);
-    const a = 0.02 + p * 0.25; // filtro abre
+    const a = 0.02 + p * 0.25;
     lp += a * (rnd() - lp);
     const s = lp * p * p * amp;
     L[i] += s;
@@ -199,7 +177,6 @@ for (const [t0, t1, riseAmp, hitAmp] of P.hits) {
   impact(t1, hitAmp);
 }
 
-// ---------- reverb (Schroeder simples) ----------
 function reverb(input, combMs, apMs) {
   const out = new Float32Array(N);
   for (const ms of combMs) {
@@ -237,7 +214,6 @@ for (let i = 0; i < N; i++) {
   R[i] += revR[i] * 0.9;
 }
 
-// ---------- master: fades, saturação suave e normalização ----------
 let peak = 0;
 for (let i = 0; i < N; i++) {
   const t = i / SR;

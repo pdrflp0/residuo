@@ -5,7 +5,6 @@ import { buildReport, renderMarkdown } from '../src/report';
 import { renderHtml } from '../src/report-html';
 import { detail, Trace } from './fixtures';
 
-// 1 criar · 2 excluir · 3 confirmar · 4 ler (ausente) · 5 liberar (upsert) · 6 ler (g1 visível)
 const report = () => buildReport(detail('vulnerable', new Trace().create().deleteG().confirm().absent().release('UPSERT_INSERTED', true).visible(1, 'delivery:dlv_1')));
 
 const good = (): AiSummaryOutput => ({
@@ -56,7 +55,6 @@ describe('prompt', () => {
   });
 });
 
-/** Responde como a API de mensagens e guarda a requisição para inspeção. */
 function fakeApi(out: unknown, over: Record<string, unknown> = {}) {
   const calls: { url: string; headers: Headers; body: any }[] = [];
   const fetch = (async (url: string | URL, init?: RequestInit) => {
@@ -84,7 +82,6 @@ describe('summarizeReport', () => {
     expect(s).toMatchObject({ schema: 'residuo.ai-summary/v1', runId: 'run_vulnerable', model: DEFAULT_AI_MODEL, verdict: 'VIOLATION', usage: { inputTokens: 1800, outputTokens: 240 } });
     expect(api.calls).toHaveLength(1);
     const call = api.calls[0]!;
-    // a URL não vem de variável de ambiente: as evidências só vão para onde a configuração manda
     expect(call.url).toBe('https://api.anthropic.com/v1/messages');
     expect(call.headers.get('x-api-key')).toBe('test-key');
     expect(call.body.model).toBe(DEFAULT_AI_MODEL);

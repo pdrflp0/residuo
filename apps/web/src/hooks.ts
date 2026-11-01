@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-// ---------- rota por hash (sem dependência de roteador) ----------
-
 export type Route = { name: 'home' } | { name: 'run'; id: string } | { name: 'compare'; base: string; candidate: string };
 
 function parse(hash: string): Route {
@@ -27,8 +25,6 @@ export function useRoute(): Route {
 export const go = (path: string) => {
   location.hash = path;
 };
-
-// ---------- busca com polling enquanto houver trabalho ----------
 
 export function useResource<T>(fetcher: () => Promise<T>, deps: unknown[], keepPolling?: (data: T) => boolean, intervalMs = 350) {
   const [data, setData] = useState<T | undefined>();
@@ -69,8 +65,6 @@ export function useResource<T>(fetcher: () => Promise<T>, deps: unknown[], keepP
   return { data, error, loading, reload };
 }
 
-// ---------- preferência de movimento ----------
-
 const MOTION_KEY = 'residuo:motion';
 
 function readStoredMotion(): boolean | undefined {
@@ -82,7 +76,6 @@ function readStoredMotion(): boolean | undefined {
   }
 }
 
-/** Animações ligadas, salvo preferência do sistema por movimento reduzido ou escolha do usuário. */
 export function useMotion() {
   const media = typeof window !== 'undefined' ? window.matchMedia('(prefers-reduced-motion: reduce)') : undefined;
   const [systemReduced, setSystemReduced] = useState(media?.matches ?? false);
@@ -105,18 +98,11 @@ export function useMotion() {
     try {
       localStorage.setItem(MOTION_KEY, v ? 'on' : 'off');
     } catch {
-      /* armazenamento indisponível: vale só nesta sessão */
     }
   }, []);
   return { enabled, setEnabled };
 }
 
-// ---------- reprodução do registro gravado ----------
-
-/**
- * Revela as observações uma a uma. É só apresentação: os dados já estão gravados.
- * Sem animação, tudo aparece de uma vez.
- */
 export function usePlayback(total: number, animate: boolean, stepMs = 420) {
   const [revealed, setRevealed] = useState(animate ? 0 : total);
   const [playing, setPlaying] = useState(animate);

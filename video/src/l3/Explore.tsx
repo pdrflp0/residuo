@@ -11,13 +11,12 @@ const ORDERS = LINES.filter((l) => /^\s+(VIOLATION|NO_VIOLATION_OBSERVED|INCONCL
 const VISIBLE = 18;
 const LH = 35;
 
-/** Quadro em que cada linha da saída REAL da CLI aparece. */
 function lineAt(i: number): number {
-  if (i < 2) return 40 + i * 4; // cabeçalho
-  if (i < 2 + ORDERS) return 48 + ((i - 2) * 120) / ORDERS; // as ordens, rápido
+  if (i < 2) return 40 + i * 4;
+  if (i < 2 + ORDERS) return 48 + ((i - 2) * 120) / ORDERS;
   const rest = i - 2 - ORDERS;
-  if (rest <= 1) return 176 + rest * 6; // resumo
-  return 200 + (rest - 2) * 4; // menor sequência e etapas
+  if (rest <= 1) return 176 + rest * 6;
+  return 200 + (rest - 2) * 4;
 }
 
 function color(line: string): string {
@@ -28,7 +27,6 @@ function color(line: string): string {
   return '#c9c4b8';
 }
 
-/** A CLI explorando 60 ordens com 3 clientes: saída real, gravada na captura. */
 export function Explore() {
   const frame = useCurrentFrame();
   const typed = Math.round(ease(frame, [4, 34], [0, CMD.length]));

@@ -1,5 +1,3 @@
-# Imagem única para reference-service e api (o comando muda no compose).
-# A API também serve a interface compilada (WEB_DIST).
 FROM node:24-bookworm-slim
 WORKDIR /app
 COPY package.json package-lock.json tsconfig.base.json tsconfig.json ./

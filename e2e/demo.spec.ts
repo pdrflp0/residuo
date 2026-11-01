@@ -8,14 +8,12 @@ test('demo: executa, localiza o reaparecimento, exporta e compara com o modo pro
   await expect(page).toHaveURL(/#\/runs\/run_[a-f0-9]{10}$/);
   const runId = page.url().split('/').pop()!;
 
-  // o veredito exibido vem da API
   const verdict = page.getByRole('region', { name: 'Veredito da execução' });
   await expect(verdict).toContainText('Violação: o registro excluído voltou');
   const api = (await (await request.get(`http://127.0.0.1:4010/api/runs/${runId}`)).json()) as RunDetail;
   expect(api.run.verdict?.result).toBe('VIOLATION');
   await expect(verdict).toContainText(api.run.verdict!.summary);
 
-  // abrir a evidência do reaparecimento
   await page.getByRole('button', { name: /Ver o reaparecimento \(etapa 9\)/ }).click();
   const evidence = page.getByRole('region', { name: 'Evidência da etapa 9' });
   await expect(evidence).toContainText('Ler estado final');
@@ -23,11 +21,9 @@ test('demo: executa, localiza o reaparecimento, exporta e compara com o modo pro
   await expect(evidence).toContainText('"generation": 1');
   await expect(page.getByRole('button', { name: /^Etapa 9: Ler estado final/ })).toHaveAttribute('aria-pressed', 'true');
 
-  // ir para a causa
   await evidence.getByRole('button', { name: /ir para a causa \(etapa 8\)/ }).click();
   await expect(page.getByRole('region', { name: 'Evidência da etapa 8' })).toContainText('UPSERT_INSERTED');
 
-  // exportar JSON e Markdown: o conteúdo bate com a API
   const [jsonDl] = await Promise.all([page.waitForEvent('download'), page.getByRole('link', { name: 'Relatório JSON' }).click()]);
   const report = JSON.parse(await readFile((await jsonDl.path())!, 'utf8')) as ReportV1;
   expect(report.schema).toBe('residuo.report/v1');
@@ -38,7 +34,6 @@ test('demo: executa, localiza o reaparecimento, exporta e compara com o modo pro
   expect(md).toContain('**Resultado:** VIOLATION');
   expect(md).toContain(runId);
 
-  // relatório HTML compartilhável: abre sozinho, sem servidor, e mostra a mesma evidência
   const [htmlDl] = await Promise.all([page.waitForEvent('download'), page.getByRole('link', { name: 'Relatório HTML (compartilhável)' }).click()]);
   const shared = await page.context().newPage();
   const jsErrors: string[] = [];
@@ -52,7 +47,6 @@ test('demo: executa, localiza o reaparecimento, exporta e compara com o modo pro
   expect(jsErrors).toEqual([]);
   await shared.close();
 
-  // resumo com IA (API substituída por um stub local): cita etapas e cada citação leva à evidência
   const ai = page.getByRole('region', { name: 'Resumo com IA' });
   await ai.getByRole('button', { name: 'Gerar resumo' }).click();
   await expect(ai).toContainText('A edição retida recriou o registro depois da exclusão confirmada.');
@@ -63,7 +57,6 @@ test('demo: executa, localiza o reaparecimento, exporta e compara com o modo pro
   expect(withAi.aiSummary?.verdict).toBe('VIOLATION');
   expect(withAi.verdict).toEqual(api.run.verdict);
 
-  // repetir no modo protegido e comparar
   await page.getByRole('button', { name: 'Repetir em guarded e comparar' }).click();
   await expect(page).toHaveURL(new RegExp(`#/compare/${runId}/run_[a-f0-9]{10}$`));
   await expect(page.getByText('O resultado mudou de VIOLATION para NO_VIOLATION_OBSERVED')).toBeVisible();
@@ -78,19 +71,16 @@ test.describe('acessibilidade', () => {
     await page.goto('/');
     await expect(page.getByLabel('Animações')).not.toBeChecked();
 
-    // iniciar a demo só pelo teclado
     const demo = page.getByRole('button', { name: 'Rodar a demonstração' });
     await demo.focus();
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(/#\/runs\//);
     await expect(page.getByRole('region', { name: 'Veredito da execução' })).toBeVisible();
 
-    // sem animação: as 9 etapas já estão visíveis
     await expect(page.locator('.playbar .counter')).toHaveText('9/9');
     const node9 = page.getByRole('button', { name: /^Etapa 9:/ });
     await expect(node9).toHaveAttribute('aria-pressed', 'true');
 
-    // roving tabindex: setas movem a seleção e o foco
     await node9.focus();
     await page.keyboard.press('ArrowLeft');
     const node8 = page.getByRole('button', { name: /^Etapa 8:/ });
@@ -100,7 +90,6 @@ test.describe('acessibilidade', () => {
     await page.keyboard.press('Home');
     await expect(page.getByRole('button', { name: /^Etapa 1:/ })).toBeFocused();
 
-    // nenhuma animação CSS ativa nos nós
     const animated = await page.locator('.node').evaluateAll((els) => els.filter((e) => getComputedStyle(e).animationName !== 'none').length);
     expect(animated).toBe(0);
   });

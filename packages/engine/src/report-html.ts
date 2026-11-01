@@ -1,11 +1,3 @@
-/**
- * Relatório HTML compartilhável (nível 3): um único arquivo, sem nenhum recurso externo,
- * para anexar numa issue, num PR ou mandar por e-mail. Mostra a linha do tempo clicável,
- * a evidência de cada etapa e o veredito.
- *
- * Segurança: os dados vão embutidos como JSON escapado (sem "</script>" possível) e todo
- * texto é inserido com textContent. Respostas de sistemas de terceiros nunca viram HTML.
- */
 import type { ReportV1 } from '@residuo/contracts';
 import { describeStep } from './narrative';
 

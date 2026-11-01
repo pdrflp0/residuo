@@ -11,7 +11,6 @@ const bf = geometry.backup.guardedFacts;
 const df = geometry.derived.guardedFacts;
 const seen = (v: boolean | null) => (v === false ? 'ausente' : v === true ? 'g1 visível' : '—');
 
-/** A mesma sequência no modo protegido. Comparações reais e fatos das execuções protegidas. */
 export function Fix() {
   return (
     <Paper>

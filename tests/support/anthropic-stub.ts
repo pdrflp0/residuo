@@ -1,10 +1,3 @@
-/**
- * Substituto local da API de mensagens da Anthropic, só para testes (sem rede, sem custo, sem chave real).
- * Monta o resumo a partir do relatório recebido, como um modelo obediente faria: repete o veredito e cita
- * a confirmação, a causa e a leitura da violação. O caminho de produção (SDK, conferência, gravação) é o real.
- *
- * Uso direto (ponta a ponta): STUB_PORT=4199 npx tsx tests/support/anthropic-stub.ts
- */
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { pathToFileURL } from 'node:url';

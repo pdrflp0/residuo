@@ -7,10 +7,6 @@ export const AI_FRAMES = 360;
 
 type Icon = ComponentType<{ size?: number; strokeWidth?: number; color?: string }>;
 
-/**
- * O mecanismo do resumo com IA (não um resumo inventado): o relatório vai como dado,
- * o modelo devolve texto com etapas citadas e uma conferência em código aceita ou descarta.
- */
 export function Ai() {
   return (
     <Paper>

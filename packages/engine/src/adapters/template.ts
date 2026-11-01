@@ -1,7 +1,3 @@
-/**
- * Modelos {{variável}} do residuo.json e extração de fatos das respostas.
- * Pequeno de propósito: caminhos com ponto ("item.generation", "items.0.id") em vez de JSONPath completo.
- */
 import type { FactRule } from '@residuo/contracts';
 
 export type Vars = Record<string, unknown>;
@@ -26,7 +22,6 @@ function need(vars: Vars, name: string): unknown {
   return v;
 }
 
-/** Corpo JSON: "{{x}}" sozinho vira o valor tipado; dentro de um texto, é interpolado. */
 export function render(value: unknown, vars: Vars): unknown {
   if (typeof value === 'string') {
     const whole = value.match(WHOLE);
@@ -40,12 +35,10 @@ export function render(value: unknown, vars: Vars): unknown {
   return value;
 }
 
-/** Caminho de URL: cada valor interpolado é codificado. */
 export function renderPath(path: string, vars: Vars): string {
   return path.replace(INLINE, (_, name: string) => encodeURIComponent(String(need(vars, name))));
 }
 
-/** Aplica uma regra de fato à resposta. "$status" é o código HTTP. */
 export function extract(rule: FactRule | undefined, body: unknown, status: number): unknown {
   if (rule === undefined) return undefined;
   const read = (path: string) => (path === '$status' ? status : lookup(body, path));

@@ -1,6 +1,5 @@
 import pg from 'pg';
 
-/** Cria o banco se ainda não existir (Docker, Homebrew ou qualquer Postgres local). */
 export async function ensureDatabase(databaseUrl: string): Promise<void> {
   const url = new URL(databaseUrl);
   const name = decodeURIComponent(url.pathname.slice(1));
@@ -14,7 +13,7 @@ export async function ensureDatabase(databaseUrl: string): Promise<void> {
       try {
         await client.query(`CREATE DATABASE ${name}`);
       } catch (err) {
-        if ((err as { code?: string }).code !== '42P04') throw err; // criado em paralelo por outro processo
+        if ((err as { code?: string }).code !== '42P04') throw err;
       }
     }
   } finally {
@@ -22,10 +21,6 @@ export async function ensureDatabase(databaseUrl: string): Promise<void> {
   }
 }
 
-/**
- * Esquema do alvo. Tudo é chaveado por `ns` (namespace de execução) com ON DELETE CASCADE:
- * o reset de uma execução apaga somente as linhas daquele namespace.
- */
 export const TARGET_SCHEMA = `
 CREATE TABLE IF NOT EXISTS namespaces (
   ns          text PRIMARY KEY,
@@ -34,7 +29,6 @@ CREATE TABLE IF NOT EXISTS namespaces (
   created_at  timestamptz NOT NULL DEFAULT now()
 );
 
--- Contador de gerações por id: sobrevive à exclusão, por isso "criar de novo" abre g2, não g1.
 CREATE TABLE IF NOT EXISTS identities (
   ns               text NOT NULL REFERENCES namespaces(ns) ON DELETE CASCADE,
   id               text NOT NULL,
@@ -53,8 +47,6 @@ CREATE TABLE IF NOT EXISTS items (
   PRIMARY KEY (ns, id)
 );
 
--- Registro de exclusões. No modo guarded funciona como marcador de exclusão (tombstone)
--- por (id, geração). No modo vulnerable existe só para confirmar a exclusão: o consumidor o ignora.
 CREATE TABLE IF NOT EXISTS deletions (
   ns              text NOT NULL REFERENCES namespaces(ns) ON DELETE CASCADE,
   deletion_id     text NOT NULL,
@@ -73,7 +65,6 @@ CREATE TABLE IF NOT EXISTS deletions (
 );
 CREATE INDEX IF NOT EXISTS deletions_by_generation ON deletions (ns, id, generation);
 
--- Fila de entregas pendentes (outbox do cliente offline). prepared -> held -> delivered.
 CREATE TABLE IF NOT EXISTS deliveries (
   ns              text NOT NULL REFERENCES namespaces(ns) ON DELETE CASCADE,
   delivery_id     text NOT NULL,
@@ -89,8 +80,6 @@ CREATE TABLE IF NOT EXISTS deliveries (
   PRIMARY KEY (ns, delivery_id)
 );
 
--- Dados derivados (nível 3). O cache guarda a última leitura; o índice de busca, um resumo do registro.
--- No modo guarded, a exclusão invalida os dois na mesma transação; no vulnerable, eles ficam para trás.
 CREATE TABLE IF NOT EXISTS cache_entries (
   ns         text NOT NULL REFERENCES namespaces(ns) ON DELETE CASCADE,
   id         text NOT NULL,
@@ -108,7 +97,6 @@ CREATE TABLE IF NOT EXISTS search_index (
   PRIMARY KEY (ns, id)
 );
 
--- Backups (nível 3): cópia das linhas de items no momento do backup.
 CREATE TABLE IF NOT EXISTS snapshots (
   ns           text NOT NULL REFERENCES namespaces(ns) ON DELETE CASCADE,
   snapshot_id  text NOT NULL,
@@ -117,7 +105,6 @@ CREATE TABLE IF NOT EXISTS snapshots (
   PRIMARY KEY (ns, snapshot_id)
 );
 
--- Inbox do consumidor protegido: deduplicação por id de entrega.
 CREATE TABLE IF NOT EXISTS inbox (
   ns            text NOT NULL REFERENCES namespaces(ns) ON DELETE CASCADE,
   delivery_id   text NOT NULL,

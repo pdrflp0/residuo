@@ -1,13 +1,3 @@
-/**
- * Os dois consumidores de atualizações. Esta é a diferença inteira entre os modos.
- *
- * vulnerable: faz upsert por id. Se o registro foi apagado, o INSERT "acha" espaço livre
- *             e recria a linha com a geração antiga — o registro ressuscita.
- * guarded:    (1) inbox deduplica a entrega; (2) bloqueia a identidade para serializar com
- *             exclusões; (3) consulta o marcador de exclusão de (id, geração); (4) exige que
- *             a geração e a revisão-base batam com a linha atual. Atualização nunca cria linha.
- *             Toda recusa devolve um resultado explícito em vez de sumir em silêncio.
- */
 import type { Tx } from './db';
 
 export interface Delivery {
@@ -45,7 +35,6 @@ export interface ConsumerResult {
 
 const opRef = (d: Delivery) => `delivery:${d.delivery_id}`;
 
-/** Mantém o índice de busca a par das escritas (os dois modos fazem isso; a diferença está na exclusão). */
 export async function indexItem(tx: Tx, ns: string, id: string, generation: number, revision: number, data: Record<string, unknown>, lastWrittenBy: string) {
   await tx.query(
     `INSERT INTO search_index (ns, id, generation, revision, title, last_written_by) VALUES ($1, $2, $3, $4, $5, $6)
@@ -88,7 +77,6 @@ export async function consumeGuarded(tx: Tx, d: Delivery): Promise<ConsumerResul
 }
 
 async function decideGuarded(tx: Tx, d: Delivery): Promise<ConsumerResult> {
-  // Mesmo lock usado por criar/excluir/restaurar: a decisão abaixo não corre contra uma exclusão.
   await tx.query(`SELECT 1 FROM identities WHERE ns = $1 AND id = $2 FOR UPDATE`, [d.ns, d.entity_id]);
 
   const tomb = await tx.query(

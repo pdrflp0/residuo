@@ -14,7 +14,6 @@ const PHASES = [
   { at: 375, n: 5, text: '"Não existe? Então cria." O upsert recria a nota apagada.' },
 ];
 
-/** Como o bug acontece, com o exemplo do app de notas offline. */
 export function Story() {
   const frame = useCurrentFrame();
   const phase = [...PHASES].reverse().find((p) => frame >= p.at)!;
@@ -34,13 +33,12 @@ export function Story() {
   const cardToneBg = back > 0.5 ? C.reappearedBg : deleted > 0.5 ? C.deletedBg : C.liveBg;
   const CardIcon = back > 0.5 ? Ghost : deleted > 0.5 ? Trash2 : CircleDot;
 
-  // posições das colunas
   const phoneX = 150;
   const serverX = 700;
   const laptopX = 1290;
   const colW = 480;
   const envStart = { x: phoneX + 120, y: 520 };
-  const envEnd = { x: serverX + 250, y: 190 }; // pousa no cabeçalho do servidor, sem cobrir o cartão
+  const envEnd = { x: serverX + 250, y: 190 };
 
   return (
     <Paper>
@@ -138,7 +136,6 @@ export function Story() {
         </div>
       </Device>
 
-      {/* seta do notebook para o servidor */}
       <div
         style={{
           position: 'absolute',
@@ -153,7 +150,6 @@ export function Story() {
         }}
       />
 
-      {/* envelope da edição antiga */}
       <div
         style={{
           position: 'absolute',
@@ -179,7 +175,6 @@ export function Story() {
         </div>
       </div>
 
-      {/* legenda */}
       <div
         style={{
           position: 'absolute',

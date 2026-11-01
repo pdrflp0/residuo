@@ -1,7 +1,3 @@
-/**
- * Construtor de observações para testar o avaliador sem rede.
- * Os fatos imitam o que o adapter extrai de respostas reais do serviço de referência.
- */
 import type { Lane, RunDetail, StepFacts, StepKind, StepObservation, StepStatus } from '@residuo/contracts';
 import { evaluate } from '../src/evaluate';
 import { getScenario, summarizeScenario } from '../src/scenarios';
@@ -70,7 +66,6 @@ export class Trace {
   }
 }
 
-/** Detalhe de execução do cenário principal, com o veredito calculado pelo avaliador. */
 export function detail(mode: 'vulnerable' | 'guarded', trace: Trace, id = `run_${mode}`): RunDetail {
   const scenario = getScenario('held-update-after-delete')!;
   const verdict = evaluate({ policy: 'delete-wins', steps: trace.steps });

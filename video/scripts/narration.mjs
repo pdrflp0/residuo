@@ -1,20 +1,7 @@
-/**
- * Gera a narração em trechos sincronizados com as cenas do vídeo.
- *
- *   node scripts/narration.mjs say [intro|l3]          # voz do macOS (Luciana), sem conta
- *   node scripts/narration.mjs elevenlabs [intro|l3]   # ElevenLabs; lê a chave de video/.env.local
- *
- * video/.env.local (não vai para o git):
- *   ELEVENLABS_API_KEY=...
- *   ELEVENLABS_VOICE_ID=...   # opcional; escolha uma voz pt-BR na Voice Library
- *
- * Saída: public/audio/narration-<motor>[-l3]/<id>.wav e src/audio-manifest.json (início e duração de cada trecho).
- */
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 
-/** Roteiro do vídeo de apresentação: `at` é o segundo do vídeo em que o trecho começa. */
 export const SCRIPT = [
   { id: 'hook-1', at: 0.4, text: 'Você apagou. O servidor confirmou.' },
   { id: 'hook-2', at: 3.2, text: 'E ele voltou.' },
@@ -38,7 +25,6 @@ export const SCRIPT = [
   { id: 'outro', at: 73.3, text: 'Resíduo. Código aberto, no GitHub.' },
 ];
 
-/** Roteiro do vídeo do nível 3 (77 s). Os tempos seguem as cenas de src/l3. */
 export const SCRIPT_L3 = [
   { id: 'hook-1', at: 0.4, text: 'Apagar do banco não basta.' },
   { id: 'hook-2', at: 2.6, text: 'O dado ainda pode voltar por outros caminhos.' },
@@ -73,7 +59,6 @@ const audioDir = `narration-${engine}${video.suffix}`;
 const outDir = `${root}public/audio/${audioDir}/`;
 await mkdir(outDir, { recursive: true });
 
-/** Duração de um WAV PCM lendo o cabeçalho (procura o bloco "data"). */
 function wavDuration(file) {
   const b = readFileSync(file);
   const channels = b.readUInt16LE(22);
@@ -144,11 +129,9 @@ async function synthEleven(seg, wav, prev, next) {
     }),
   });
   if (!res.ok) throw new Error(`ElevenLabs respondeu HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
-  // pcm_24000 = PCM 16 bits mono cru (44,1 kHz exige plano Pro); vira WAV sem ffmpeg
   await writeFile(wav, pcmToWav(Buffer.from(await res.arrayBuffer()), 24000));
 }
 
-/** Remove silêncio no começo e no fim (mantém 40 ms), para o trecho caber na janela. */
 function trimWav(file) {
   const b = readFileSync(file);
   const channels = b.readUInt16LE(22);
@@ -168,7 +151,6 @@ function trimWav(file) {
   return writeFile(file, pcmToWav(Buffer.from(pcm.subarray(a * 2 * channels, (z + 1) * 2 * channels)), rate, channels));
 }
 
-/** Leva cada fala a ~-14 dBFS RMS (com pico limitado a 0,95) para a voz ficar no mesmo nível em qualquer motor. */
 function normalizeWav(file) {
   const b = readFileSync(file);
   let off = 12;
@@ -196,7 +178,6 @@ function normalizeWav(file) {
 const segments = [];
 for (const [i, seg] of SCRIPT_RUN.entries()) {
   const wav = `${outDir}${seg.id}.wav`;
-  // ONLY=id1,id2 regenera só esses trechos e reaproveita os outros (economiza créditos)
   const only = process.env.ONLY?.split(',');
   if (only && !only.includes(seg.id) && existsSync(wav)) {
     await normalizeWav(wav);
@@ -211,7 +192,6 @@ for (const [i, seg] of SCRIPT_RUN.entries()) {
   segments.push({ id: seg.id, at: seg.at, duration: Number(dur.toFixed(3)), file: `audio/${audioDir}/${seg.id}.wav` });
 }
 
-// avisa quando um trecho invade o próximo
 let ok = true;
 for (const [i, s] of segments.entries()) {
   const limit = segments[i + 1]?.at ?? video.end;

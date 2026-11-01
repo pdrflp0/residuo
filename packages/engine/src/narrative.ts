@@ -1,7 +1,3 @@
-/**
- * Frases em linguagem simples derivadas SOMENTE dos fatos gravados.
- * Se o fato não existe, a frase não afirma nada sobre ele.
- */
 import type { StepObservation, Verdict } from '@residuo/contracts';
 
 export type Tone = 'live' | 'deleted' | 'conflict' | 'reappeared' | 'new' | 'restored' | 'neutral' | 'failure' | 'skipped';
@@ -59,7 +55,6 @@ export function describeStep(o: StepObservation, verdict?: Verdict): StepNarrati
         const wrote = f.wrote ? 'e relata que escreveu no registro' : 'sem escrever nada';
         return { tone: isCause(o, verdict) ? 'reappeared' : f.wrote ? 'neutral' : 'conflict', headline: `Entrega processada: o alvo respondeu "${f.writeOutcome ?? '?'}" ${wrote}.` };
       }
-      // O tom de reaparecimento numa escrita só vem do veredito (leitura posterior que confirmou).
       return { tone: isCause(o, verdict) ? 'reappeared' : known.tone, headline: known.text(o) };
     }
     case 'delete':

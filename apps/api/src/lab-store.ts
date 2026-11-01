@@ -103,7 +103,6 @@ export class LabStore implements OnApplicationShutdown {
     return rows[0]?.summary;
   }
 
-  /** Um resumo por execução; gerar de novo substitui o anterior. */
   async saveAiSummary(s: AiSummary): Promise<void> {
     await this.pool.query(
       `INSERT INTO ai_summaries (run_id, model, summary, created_at) VALUES ($1, $2, $3, $4)

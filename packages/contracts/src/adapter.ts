@@ -1,11 +1,3 @@
-/**
- * Contrato do adapter: a única ponte entre o engine e o sistema testado.
- *
- * O engine não conhece tabelas, filas ou código do alvo. Ele pede operações conceituais
- * e recebe (a) a troca HTTP sanitizada e (b) fatos interpretados. Se o alvo não oferece
- * uma capacidade, o adapter lança AdapterError('unsupported') e o engine registra a limitação
- * em vez de inventar o resultado.
- */
 import type { AdapterDescriptor, Fault, HttpExchange, StepFacts, TargetMode } from './domain';
 
 export interface AdapterResult {
@@ -57,10 +49,7 @@ export interface TargetAdapter {
     input: { id: string; deletionId: string; authorization: { actor: string; reason: string } },
     opts: CallOptions,
   ): Promise<AdapterResult>;
-  /** `point`: ponto de leitura (padrão "primary"); pontos derivados como "cache" e "search" são opcionais. */
   inspectEntity(ns: string, id: string, opts: CallOptions, point?: string): Promise<AdapterResult>;
-  /** Backup do estado atual do namespace. */
   takeSnapshot(ns: string, opts: CallOptions): Promise<AdapterResult>;
-  /** Restaura um backup. O que acontece com exclusões posteriores ao backup é justamente o que se testa. */
   restoreSnapshot(ns: string, snapshotId: string, opts: CallOptions): Promise<AdapterResult>;
 }

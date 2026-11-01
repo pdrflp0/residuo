@@ -17,7 +17,6 @@ const PHASES = [
   { at: 150, title: 'Etapa 8, a causa.', body: 'O consumidor respondeu UPSERT_INSERTED: recriou a linha apagada.', color: C.reappeared },
 ];
 
-/** Evidência: a leitura da etapa 9 e a escrita da etapa 8, com destaques. */
 export function Evidence() {
   const frame = useCurrentFrame();
   const phase = [...PHASES].reverse().find((p) => frame >= p.at)!;

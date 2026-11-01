@@ -18,7 +18,6 @@ import type { Response } from 'express';
 import { z } from 'zod';
 import { TargetStore } from './store';
 
-/** Só namespaces de teste: o reset nunca alcança nada fora do prefixo `rsd-`. */
 const NamespaceId = z.string().regex(/^rsd-[a-z0-9-]{1,80}$/, 'namespace deve começar com "rsd-"');
 const ItemId = z.string().regex(/^[a-z0-9][a-z0-9-]{0,63}$/);
 const OpaqueId = z.string().regex(/^[a-z]{3}_[a-f0-9]{12}$/);
@@ -83,7 +82,6 @@ export class ItemsController {
     const ns = parse(NamespaceId, rawNs);
     const space = await this.store.getNamespace(ns);
     if (space.fault === 'inspect-hang') {
-      // Falha injetada: a leitura não responde até o cliente desistir (ou 30 s).
       await new Promise<void>((resolve) => {
         const timer = setTimeout(resolve, 30_000);
         res.on('close', () => {

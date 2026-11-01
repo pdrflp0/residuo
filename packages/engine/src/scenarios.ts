@@ -1,17 +1,9 @@
-/**
- * Cenários como dados versionados. Mudou a sequência ou o significado de uma etapa,
- * muda a versão: relatórios antigos continuam apontando para a versão que realmente rodou.
- */
 import type { Lane, Policy, ScenarioStepSummary, ScenarioSummary, StepKind } from '@residuo/contracts';
 
 export interface StepParams {
-  /** etapa cuja entrega (delivery) será liberada/reentregue */
   delivery?: string;
-  /** etapa de exclusão a confirmar ou restaurar */
   deletion?: string;
-  /** etapa de backup a restaurar */
   snapshot?: string;
-  /** ponto de leitura de uma etapa inspect (padrão "primary") */
   point?: string;
 }
 

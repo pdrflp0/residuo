@@ -14,7 +14,6 @@ export interface ReferenceAppOptions {
 export async function createReferenceApp(opts: ReferenceAppOptions): Promise<INestApplication> {
   await ensureDatabase(opts.databaseUrl);
   const pool = new pg.Pool({ connectionString: opts.databaseUrl, max: 10 });
-  // Conexão ociosa derrubada (ex.: Postgres reiniciado) não deve derrubar o processo; a próxima consulta reconecta.
   pool.on('error', (err) => console.error(`[reference-service] conexão do pool perdida: ${err.message}`));
   await pool.query(TARGET_SCHEMA);
 

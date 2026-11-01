@@ -16,19 +16,16 @@ import { RunExecutor, TARGET_ADAPTER } from './run-executor';
 
 export interface ApiOptions {
   databaseUrl: string;
-  /** Somente o serviço de referência local. Não há campo para testar URLs arbitrárias. */
   referenceServiceUrl: string;
   adapter?: TargetAdapter;
   webDist?: string;
   logger?: boolean;
-  /** resumo com IA (opcional); sem apiKey fica desligado */
   ai?: AiConfig;
 }
 
 export async function createApiApp(opts: ApiOptions): Promise<NestExpressApplication> {
   await ensureDatabase(opts.databaseUrl);
   const pool = new pg.Pool({ connectionString: opts.databaseUrl, max: 10 });
-  // Conexão ociosa derrubada (ex.: Postgres reiniciado) não deve derrubar o processo; a próxima consulta reconecta.
   pool.on('error', (err) => console.error(`[api] conexão do pool perdida: ${err.message}`));
   await pool.query(LAB_SCHEMA);
   const adapter = opts.adapter ?? new ReferenceHttpAdapter(opts.referenceServiceUrl);
@@ -53,7 +50,6 @@ export async function createApiApp(opts: ApiOptions): Promise<NestExpressApplica
   app.setGlobalPrefix('api');
   app.enableShutdownHooks();
 
-  // Em produção local (docker compose), a API também serve a interface já compilada.
   if (opts.webDist && existsSync(join(opts.webDist, 'index.html'))) {
     app.useStaticAssets(opts.webDist);
     const index = join(opts.webDist, 'index.html');

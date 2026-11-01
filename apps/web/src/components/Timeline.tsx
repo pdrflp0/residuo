@@ -15,14 +15,9 @@ interface Props {
   label: string;
 }
 
-/**
- * Faixas (API, cliente, consumidor, observador) × etapas em ordem lógica.
- * Cada nó é uma observação gravada; colunas ainda não reveladas aparecem tracejadas.
- */
 export function Timeline({ scenario, steps, verdict, revealed, selectedSeq, onSelect, nextStepId, diffStepIds, label }: Props) {
   const refs = useRef(new Map<number, HTMLButtonElement>());
   const cols = scenario.steps.length;
-  // só as faixas que o cenário usa (a de operação aparece apenas nos cenários de backup)
   const lanes = LANES.filter((l) => scenario.steps.some((st) => st.lane === l.id));
   const confirmSeq = verdict?.confirmationSeq ?? steps.find((s) => s.kind === 'confirm-deletion' && s.facts.confirmed)?.seq;
   const showWatched = confirmSeq !== undefined && revealed >= confirmSeq && confirmSeq < cols;

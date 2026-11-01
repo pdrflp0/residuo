@@ -1,15 +1,3 @@
-/**
- * notes-sync — app de exemplo para integrar com o Resíduo.
- *
- * Uma API de notas comum (criar, ler, excluir) mais o endpoint que clientes offline usam para
- * enviar mudanças guardadas: POST /sync/push. A estratégia de sincronização é escolhida por tenant:
- *   upsert     → aplica a mudança com INSERT … ON CONFLICT: recria notas excluídas (o bug)
- *   tombstone  → inbox + lock + marcador de exclusão por geração: recusa mudanças de notas excluídas
- *
- * Ganchos de teste (/__residuo/*) só existem com RESIDUO_HOOKS=1. Eles simulam o cliente offline
- * (guardar uma mudança e enviá-la depois) e criam/removem tenants de teste. É esse o "ponto de
- * controle" que um sistema precisa oferecer para o Resíduo segurar e soltar entregas.
- */
 import { randomUUID } from 'node:crypto';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import pg from 'pg';
@@ -91,7 +79,6 @@ export async function createNotesServer(opts: { databaseUrl: string; hooks: bool
     return rows[0].strategy;
   }
 
-  /** O coração do exemplo: como uma mudança offline é aplicada. */
   async function push(tenant: string, ch: Change): Promise<[number, Record<string, unknown>]> {
     const strategy = await strategyOf(tenant);
     const write = `change:${ch.changeId}`;
@@ -125,7 +112,6 @@ export async function createNotesServer(opts: { databaseUrl: string; hooks: bool
   async function route(method: string, path: string, tenant: string | undefined, body: any): Promise<[number, unknown]> {
     let m: RegExpMatchArray | null;
 
-    // ---------- ganchos de teste (somente com RESIDUO_HOOKS=1) ----------
     if (path.startsWith('/__residuo/')) {
       if (!opts.hooks) throw new HttpError(404, { code: 'NOT_FOUND' });
       if (method === 'POST' && path === '/__residuo/tenants') {
@@ -165,7 +151,6 @@ export async function createNotesServer(opts: { databaseUrl: string; hooks: bool
       throw new HttpError(404, { code: 'NOT_FOUND' });
     }
 
-    // ---------- API do app ----------
     if (!tenant) throw new HttpError(400, { code: 'MISSING_TENANT' });
     if (method === 'POST' && path === '/notes') {
       if (!/^[a-z0-9-]{1,64}$/.test(body?.id ?? '')) throw new HttpError(400, { code: 'INVALID_ID' });

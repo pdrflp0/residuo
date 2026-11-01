@@ -7,7 +7,6 @@ import { createReferenceApp } from '../src/app';
 export const TEST_TARGET_DB =
   process.env.TEST_TARGET_DATABASE_URL ?? 'postgres://residuo:residuo-local-only@localhost:54329/residuo_target_test';
 
-/** Sobe o serviço de referência de verdade (Nest + Postgres) numa porta livre. */
 export async function startReferenceService() {
   const app = await createReferenceApp({ databaseUrl: TEST_TARGET_DB, logger: false });
   await app.listen(0, '127.0.0.1');

@@ -1,7 +1,3 @@
-/**
- * Adapter genérico: executa as operações descritas num residuo.json contra o sistema de quem
- * está integrando. Traduz respostas em fatos com as regras do arquivo. Não decide veredito.
- */
 import {
   AdapterError,
   type AdapterCapability,
@@ -161,7 +157,6 @@ export class ConfigHttpAdapter implements TargetAdapter {
   ): Promise<AdapterResult> {
     const op = this.config.operations.restore;
     const o = await this.run('restore', op, ns, { entityId: input.id, deletionId: input.deletionId, actor: input.authorization.actor, reason: input.authorization.reason }, opts);
-    // A autorização vale só se o alvo a devolver: nada de confiar no que o Resíduo enviou.
     const actor = asString(this.fact(op!, 'actor', o));
     const reason = asString(this.fact(op!, 'reason', o));
     return this.result(o, {
@@ -221,8 +216,6 @@ export class ConfigHttpAdapter implements TargetAdapter {
     }
     throw new AdapterError('failed', `inspect (${point}): resposta HTTP ${status} não é "visível" nem a ausência declarada`, ex);
   }
-
-  // ---------- internos ----------
 
   private async deliver(name: 'release' | 'redeliver', op: Operation | undefined, ns: string, deliveryId: string, opts: CallOptions) {
     const o = await this.run(name, op, ns, { deliveryId }, opts);
@@ -294,7 +287,6 @@ export class ConfigHttpAdapter implements TargetAdapter {
     try {
       parsed = text ? JSON.parse(text) : null;
     } catch {
-      /* corpo não-JSON fica como texto */
     }
     return { request, response: { status: res.status, body: sanitize(parsed) }, durationMs: Math.round(performance.now() - started) };
   }

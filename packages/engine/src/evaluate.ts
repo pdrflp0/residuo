@@ -1,12 +1,3 @@
-/**
- * Avaliador de invariantes. Função pura: recebe as observações gravadas e devolve o veredito.
- * Não chama o alvo, não olha o relógio, não depende da interface — por isso é reexecutável
- * sobre um relatório exportado e testável com fixtures determinísticas.
- *
- * Invariante v1 ("deleted-generation-stays-gone"): depois que a exclusão de (id, geração G)
- * foi CONFIRMADA, nenhuma leitura coberta pelo teste pode ver (id, G) de novo, a não ser que a
- * política permita e exista evidência de restauração autorizada.
- */
 import type {
   Allowance,
   CheckedPoint,
@@ -20,7 +11,6 @@ import type {
 export interface EvaluateInput {
   policy: Policy;
   steps: StepObservation[];
-  /** o cenário declara uma exclusão? (todos os cenários v1 declaram) */
   expectsDeletion?: boolean;
 }
 
@@ -51,10 +41,9 @@ export function evaluate({ policy, steps, expectsDeletion = true }: EvaluateInpu
       )
     : undefined;
 
-  // Ordem dos motivos: a falha que causou o problema primeiro, as consequências depois.
   for (const s of steps) {
     if (s.status === 'failed' || s.status === 'timeout' || s.status === 'unsupported') {
-      if (s.kind === 'confirm-deletion') continue; // descrito no motivo de confirmação
+      if (s.kind === 'confirm-deletion') continue;
       inconclusiveReasons.push(`Etapa ${s.seq} (${s.title}) ${statusText[s.status]}${s.error ? `: ${s.error}` : ''}.`);
     }
   }
@@ -152,7 +141,6 @@ export function evaluate({ policy, steps, expectsDeletion = true }: EvaluateInpu
           continue;
         }
 
-        // uma violação por (geração, ponto de leitura): o relatório mostra cada lugar em que o dado sobreviveu
         const existing = violations.find((v) => v.generation === gen && (v.observationPoint ?? 'primary') === where);
         if (existing) {
           existing.evidenceSeqs.push(point.seq);
@@ -241,14 +229,12 @@ function attributeCause(
   points: CheckedPoint[],
   where: string,
 ): { step?: StepObservation; attribution: Violation['attribution'] } {
-  // Só escritas confirmadas pelo alvo e posteriores à confirmação podem explicar um reaparecimento.
   if (lastWrittenBy) {
     const best = [...steps]
       .reverse()
       .find((s) => s.seq < observedSeq && s.seq > confirmSeq && s.status === 'ok' && s.facts.wrote === true && s.facts.opRef === lastWrittenBy);
     if (best) return { step: best, attribution: 'provenance' };
   }
-  // Em ponto derivado (cache, índice), sem procedência não se culpa uma escrita: o problema é a falta de invalidação.
   if (where !== 'primary') return { attribution: 'stale-derived' };
   const previousPoint = [...points].reverse().find((p) => p.seq < observedSeq);
   const from = Math.max(confirmSeq, previousPoint?.seq ?? 0);

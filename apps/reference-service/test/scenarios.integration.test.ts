@@ -1,7 +1,3 @@
-/**
- * Integração real: engine -> HTTP -> serviço de referência -> Postgres.
- * Nenhum mock: se o consumidor não recriar a linha, o teste do modo vulnerable falha.
- */
 import { AdapterError, type StepObservation } from '@residuo/contracts';
 import { executeScenario, getScenario } from '@residuo/engine';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -149,7 +145,6 @@ describe('falhas viram INCONCLUSIVE, nunca aprovação', () => {
   });
 
   it('confirmação que nunca fica "effective"', async () => {
-    // mesmo no modo vulnerable (que ressuscita), sem confirmação não há conclusão
     const r = await run(svc.adapter, config('held-update-after-delete', 'vulnerable', { fault: 'confirm-pending' }));
     expect(r.verdict.result).toBe('INCONCLUSIVE');
     expect(r.verdict.violations).toEqual([]);

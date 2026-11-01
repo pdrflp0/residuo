@@ -1,7 +1,3 @@
-/**
- * Testes diretos do serviço (sem o engine) para regras do consumidor protegido
- * que os cenários não exercitam sozinhos.
- */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { newNamespace, startReferenceService } from './harness';
 
@@ -62,11 +58,6 @@ describe('consumidor guarded', () => {
     expect(res.status).toBe(403);
   });
 
-  /**
-   * Corrida real (sem barreiras): edição e exclusão disparadas juntas, várias vezes.
-   * Não é replay determinístico — é uma verificação de que o lock por identidade
-   * mantém o invariante em qualquer ordem que o Postgres escolher.
-   */
   it('sob corrida real entre liberação e exclusão, a geração excluída nunca fica visível', async () => {
     for (let i = 0; i < 15; i++) {
       const ns = await setup('guarded');
@@ -76,8 +67,6 @@ describe('consumidor guarded', () => {
         api('DELETE', `/ns/${ns}/items/item-1?generation=1`),
       ]);
       expect(del.status).toBe(200);
-      // Com o lock por identidade, só há duas ordens possíveis: a edição entra antes da exclusão,
-      // ou encontra o marcador de exclusão. REJECTED_NOT_FOUND indicaria decisão sem o lock.
       expect(['APPLIED', 'REJECTED_DELETED']).toContain(rel.body.consumer.outcome);
       const read = await api('GET', `/ns/${ns}/items/item-1`);
       expect(read.status).toBe(404);

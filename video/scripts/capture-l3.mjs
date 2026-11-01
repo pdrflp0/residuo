@@ -1,12 +1,3 @@
-/**
- * Capturas REAIS para o vídeo do nível 3. Precisa do ambiente de desenvolvimento no ar
- * (npm run db:up && npm run dev, na raiz). Cria execuções de verdade (backup restaurado e
- * cache/busca, nos dois modos), abre o relatório HTML exportado e roda a CLI `explore`
- * com 3 clientes contra o serviço de referência. Salva imagens em 2x, a geometria dos
- * elementos e a saída da CLI em public/shots/l3/.
- *
- *   npm run capture:l3
- */
 import { execFile } from 'node:child_process';
 import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -55,7 +46,6 @@ const geometry = {
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1440, height: 1700 }, deviceScaleFactor: 2, reducedMotion: 'reduce' });
 
-/** Bancada (cartões + linha do tempo) no estado final, com a posição de cada etapa. */
 async function bench(name, d) {
   const n = d.steps.length;
   await page.goto(`${BASE}/#/runs/${d.run.id}`);
@@ -94,7 +84,6 @@ await compare('backup', backup);
 await compare('derived', derived);
 geometry.backup.seqs = Object.fromEntries(backup.v.steps.map((s) => [s.stepId, s.seq]));
 geometry.derived.seqs = Object.fromEntries(derived.v.steps.map((s) => [s.stepId, s.seq]));
-// fatos das execuções protegidas: o vídeo só afirma o que está aqui
 const facts = (d) =>
   Object.fromEntries(
     d.steps.map((s) => [
@@ -105,9 +94,7 @@ const facts = (d) =>
 geometry.backup.guardedFacts = facts(backup.g);
 geometry.derived.guardedFacts = facts(derived.g);
 
-// ---------- relatório HTML exportado, aberto como arquivo ----------
 const html = await (await fetch(`${BASE}/api/runs/${backup.v.run.id}/report.html`)).text();
-// fora de public/: o vídeo usa só a captura; o arquivo em si é descartável
 const reportFile = join(await mkdtemp(join(tmpdir(), 'residuo-l3-')), `residuo-${backup.v.run.id}.html`);
 await writeFile(reportFile, html);
 await page.setViewportSize({ width: 1440, height: 1000 });
@@ -124,7 +111,6 @@ geometry.report = { file: `residuo-${backup.v.run.id}.html`, externalRequests: e
 await report.close();
 await browser.close();
 
-// ---------- CLI: explore com 3 clientes contra o serviço de referência (vulnerable) ----------
 const run = promisify(execFile);
 let stdout = '';
 let code = 0;

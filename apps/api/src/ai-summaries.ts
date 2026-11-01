@@ -6,18 +6,15 @@ import { RunExecutor } from './run-executor';
 
 export const AI_CONFIG = Symbol('AI_CONFIG');
 
-/** Resumo com IA é opcional: sem chave, a API responde 503 e a interface mostra como ligar. */
 export interface AiConfig {
   apiKey?: string;
   model?: string;
-  /** só por configuração explícita (RESIDUO_AI_BASE_URL) */
   baseURL?: string;
   fetch?: typeof fetch;
 }
 
 @Injectable()
 export class AiSummaries {
-  /** pedidos simultâneos para a mesma execução compartilham uma única chamada ao modelo */
   private readonly inflight = new Map<string, Promise<AiSummary>>();
 
   constructor(
@@ -33,7 +30,6 @@ export class AiSummaries {
   async generate(runId: string, refresh = false): Promise<AiSummary> {
     const apiKey = this.config.apiKey;
     if (!apiKey) throw new ServiceUnavailableException({ message: 'Resumo com IA desligado. Para ligar, inicie a API com ANTHROPIC_API_KEY definida.' });
-    // registrado antes de ler o banco: um segundo pedido nunca lê um estado anterior ao que o primeiro vai gravar
     const pending = this.inflight.get(runId);
     if (pending) return pending;
     const job = this.summarize(runId, apiKey, refresh).finally(() => this.inflight.delete(runId));

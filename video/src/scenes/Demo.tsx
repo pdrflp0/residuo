@@ -7,16 +7,15 @@ export const DEMO_FRAMES = 570;
 
 const HOME_END = 80;
 const STEP_FRAMES = 46;
-const STEPS_END = HOME_END + 9 * STEP_FRAMES; // 494
+const STEPS_END = HOME_END + 9 * STEP_FRAMES;
 
-// janela do navegador (px do vídeo)
 const FX = 610;
 const FY = 150;
 const FW = 1250;
 type StepGeo = { w: number; h: number; node: { x: number; y: number; w: number; h: number }; watched: { x: number; y: number; w: number; h: number } | null };
 const STEPS = geometry.steps as unknown as Record<string, StepGeo>;
 const geo = (k: number) => STEPS[String(k)]!;
-const S = FW / geo(9).w; // px do vídeo por px CSS da captura
+const S = FW / geo(9).w;
 const FH = Math.round(geo(9).h * S);
 
 const TEXT: Record<number, { title: string; body: string; color?: string }> = {
@@ -32,7 +31,6 @@ const TEXT: Record<number, { title: string; body: string; color?: string }> = {
   9: { title: 'E a leitura vê g1 de novo.', body: 'A geração apagada voltou.', color: C.reappeared },
 };
 
-/** Demo com capturas reais do app, etapa por etapa. */
 export function Demo() {
   const frame = useCurrentFrame();
   const step = frame < HOME_END ? 0 : Math.min(9, Math.floor((frame - HOME_END) / STEP_FRAMES) + 1);
@@ -40,14 +38,11 @@ export function Demo() {
   const textIn = ease(frame, [stepStart, stepStart + 10], [0, 1]);
   const t = TEXT[step]!;
 
-  // zoom suave nas etapas 8 e 9
   const zoom = ease(frame, [HOME_END + 7 * STEP_FRAMES, HOME_END + 7 * STEP_FRAMES + 25], [1, 1.22]);
   const unzoom = ease(frame, [STEPS_END, STEPS_END + 18], [0, 1]);
   const z = zoom - (zoom - 1) * unzoom;
-  // ancorado na borda direita: a etapa 9 nunca sai do quadro
   const origin = `${FW}px ${Math.round(FH * 0.82)}px`;
 
-  // anel que acompanha a etapa atual (posição medida na captura daquela etapa)
   const node = step > 0 ? geo(step).node : undefined;
   const prevNode = step > 1 ? geo(step - 1).node : node;
   const watched = step > 0 ? geo(step).watched : null;
@@ -60,7 +55,6 @@ export function Demo() {
 
   return (
     <Paper>
-      {/* coluna de texto */}
       <div style={{ position: 'absolute', left: 90, top: 200, width: 470 }}>
         <Eyebrow>demo real · app rodando</Eyebrow>
         <div style={{ height: 30 }} />
@@ -135,7 +129,6 @@ export function Demo() {
         )}
       </BrowserFrame>
 
-      {/* veredito real sobe por cima */}
       {verdictIn > 0 && (
         <div
           style={{

@@ -10,7 +10,6 @@ export interface Box {
   h: number;
 }
 
-/** Altura (px CSS) da faixa de cartões no topo da captura da bancada. */
 export const CARDS_H = 132;
 
 export interface Mark {
@@ -23,11 +22,6 @@ export interface Mark {
   pulse?: boolean;
 }
 
-/**
- * Captura real da bancada (cartões + linha do tempo) no estado final. Véus escondem o que
- * ainda não aconteceu (etapas futuras, zona vigiada, cartões com o resultado) e somem no
- * quadro em que a etapa "acontece" no vídeo. Os destaques usam a geometria medida na captura.
- */
 export function Bench({
   src,
   width,
@@ -52,7 +46,6 @@ export function Bench({
   return (
     <div style={{ position: 'absolute', inset: 0 }}>
       <Img src={staticFile(`shots/l3/${src}`)} style={{ position: 'absolute', left: 0, top: 0, width }} />
-      {/* cartões com o resultado: só no fim */}
       <div style={{ position: 'absolute', left: 0, top: 0, width, height: CARDS_H * S, background: C.paper, opacity: fade(cardsAt) }} />
       {z && <div style={{ position: 'absolute', left: z.x * S, top: z.y * S, width: z.w * S + 4, height: z.h * S + 30 * S, background: C.panel, opacity: fade(zoneAt) * 0.94 }} />}
       {Object.entries(bench.nodes).map(([k, b]) => {
@@ -85,7 +78,6 @@ export function Bench({
   );
 }
 
-/** Coluna de texto da esquerda, trocando de fase. */
 export function Phases({ phases, eyebrow }: { phases: { at: number; title: string; body: string; color?: string }[]; eyebrow: string }) {
   const frame = useCurrentFrame();
   const phase = [...phases].reverse().find((p) => frame >= p.at) ?? phases[0]!;

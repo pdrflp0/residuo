@@ -1,8 +1,3 @@
-/**
- * Coordena execuções: cria o registro da Run, executa o engine em segundo plano,
- * persiste cada observação assim que ela acontece e, no modo manual, segura a
- * próxima etapa numa barreira até o usuário avançar.
- */
 import { randomUUID } from 'node:crypto';
 import {
   BadRequestException,
@@ -20,7 +15,6 @@ import { LabStore } from './lab-store';
 
 export const TARGET_ADAPTER = Symbol('TARGET_ADAPTER');
 
-/** Tempo máximo que uma execução manual espera o usuário avançar. */
 const MANUAL_GATE_TIMEOUT_MS = 15 * 60_000;
 
 interface Gate {
@@ -42,7 +36,6 @@ export class RunExecutor implements OnApplicationBootstrap, BeforeApplicationShu
     @Inject(TARGET_ADAPTER) private readonly adapter: TargetAdapter,
   ) {}
 
-  /** Execuções que estavam em andamento quando o processo caiu não viram aprovação. */
   async onApplicationBootstrap() {
     for (const run of await this.store.unfinishedRuns()) {
       const steps = await this.store.getSteps(run.id);
@@ -50,7 +43,6 @@ export class RunExecutor implements OnApplicationBootstrap, BeforeApplicationShu
     }
   }
 
-  /** Antes de fechar o pool: libera barreiras e espera as execuções gravarem o estado final. */
   async beforeApplicationShutdown() {
     this.shuttingDown = true;
     for (const [id, gate] of this.gates) {
@@ -98,7 +90,6 @@ export class RunExecutor implements OnApplicationBootstrap, BeforeApplicationShu
     return run;
   }
 
-  /** Mesma configuração (inclusive versão do cenário e semente); exige que a versão ainda exista. */
   async replay(id: string, overrides: { mode?: Mode } = {}): Promise<Run> {
     const original = await this.require(id);
     const scenario = getScenario(original.scenarioId);
@@ -142,7 +133,6 @@ export class RunExecutor implements OnApplicationBootstrap, BeforeApplicationShu
     return { namespace: run.namespace };
   }
 
-  /** Para testes e encerramento: aguarda a execução terminar. */
   async settled(id: string): Promise<void> {
     await this.active.get(id);
   }
@@ -182,7 +172,6 @@ export class RunExecutor implements OnApplicationBootstrap, BeforeApplicationShu
 
   private async waitForAdvance(runId: string, stepId: string): Promise<void> {
     if (this.shuttingDown) throw new Error('servidor encerrando');
-    // A barreira é registrada antes de anunciar "paused": um avanço imediato nunca encontra a execução sem barreira.
     const gate = new Promise<void>((resolve, reject) => {
       const timer = setTimeout(() => {
         this.gates.delete(runId);
@@ -191,7 +180,7 @@ export class RunExecutor implements OnApplicationBootstrap, BeforeApplicationShu
       }, MANUAL_GATE_TIMEOUT_MS);
       this.gates.set(runId, { resolve, reject, timer });
     });
-    gate.catch(() => undefined); // rejeição tratada no await abaixo; evita aviso se ocorrer durante o setStatus
+    gate.catch(() => undefined);
     await this.store.setStatus(runId, 'paused', stepId);
     await gate;
     await this.store.setStatus(runId, 'running', stepId);

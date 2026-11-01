@@ -1,6 +1,5 @@
 import pg from 'pg';
 
-/** Cria o banco se ainda não existir (Docker, Homebrew ou qualquer Postgres local). */
 export async function ensureDatabase(databaseUrl: string): Promise<void> {
   const url = new URL(databaseUrl);
   const name = decodeURIComponent(url.pathname.slice(1));
@@ -14,7 +13,7 @@ export async function ensureDatabase(databaseUrl: string): Promise<void> {
       try {
         await client.query(`CREATE DATABASE ${name}`);
       } catch (err) {
-        if ((err as { code?: string }).code !== '42P04') throw err; // criado em paralelo por outro processo
+        if ((err as { code?: string }).code !== '42P04') throw err;
       }
     }
   } finally {
@@ -22,7 +21,6 @@ export async function ensureDatabase(databaseUrl: string): Promise<void> {
   }
 }
 
-/** Esquema do laboratório: histórico explicativo, separado da verdade do alvo testado. */
 export const LAB_SCHEMA = `
 CREATE TABLE IF NOT EXISTS runs (
   id                text PRIMARY KEY,
@@ -73,7 +71,6 @@ CREATE TABLE IF NOT EXISTS violations (
   PRIMARY KEY (run_id, idx)
 );
 
--- resumo opcional escrito por IA: tabela própria, fora do veredito
 CREATE TABLE IF NOT EXISTS ai_summaries (
   run_id      text PRIMARY KEY REFERENCES runs(id) ON DELETE CASCADE,
   model       text NOT NULL,

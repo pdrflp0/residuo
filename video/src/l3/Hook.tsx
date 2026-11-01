@@ -8,7 +8,6 @@ export const L3_HOOK_FRAMES = 180;
 
 type Icon = ComponentType<{ size?: number; strokeWidth?: number; color?: string }>;
 
-/** "Apagar do banco não basta." — o dado continua em outros lugares. */
 export function L3Hook() {
   return (
     <Paper>

@@ -140,7 +140,6 @@ export function renderMarkdown(report: ReportV1): string {
 
 const cite = (steps: number[]) => ` _(etapa${steps.length > 1 ? 's' : ''} ${steps.join(', ')})_`;
 
-/** Seção Markdown do resumo com IA (também usada pela CLI `residuo summarize`). */
 export function renderAiSummaryMarkdown(ai: AiSummary): string[] {
   const lines = ['## Resumo gerado por IA', ''];
   lines.push(`> Escrito por \`${ai.model}\` a partir das evidências abaixo. Não decide o veredito. Cada afirmação cita as etapas usadas, e as citações foram conferidas.`, '');

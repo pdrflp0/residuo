@@ -5,7 +5,6 @@ import { ease, Eyebrow, Headline, Paper, useEnter } from '../ui';
 
 export const HOOK_FRAMES = 165;
 
-/** "Você apagou. Ele voltou." — o bug em 5 segundos. */
 export function Hook() {
   const frame = useCurrentFrame();
   const enter = useEnter(4);

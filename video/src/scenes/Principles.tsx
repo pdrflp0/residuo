@@ -5,7 +5,6 @@ import { Chip, Eyebrow, Headline, Paper, useEnter } from '../ui';
 
 export const PRINCIPLES_FRAMES = 255;
 
-/** As três ideias que sustentam o veredito. */
 export function Principles() {
   return (
     <Paper>

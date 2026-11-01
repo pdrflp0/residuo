@@ -6,7 +6,6 @@ export const INTRO_FRAMES = 240;
 
 const PIPELINE = ['Criar', 'Preparar edição', 'Reter envio', 'Apagar', 'Confirmar', 'Liberar', 'Ler de novo'];
 
-/** Apresenta o Resíduo: o que é e a sequência que ele executa. */
 export function Intro() {
   const logo = useEnter(0, 14);
   return (

@@ -1,7 +1,6 @@
 import { loadFont } from '@remotion/fonts';
 import { staticFile } from 'remotion';
 
-/** Mesma identidade visual do app: papel, tinta e tons semânticos. */
 export const C = {
   paper: '#f5f3ee',
   paper2: '#efece5',

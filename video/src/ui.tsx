@@ -2,14 +2,12 @@ import type { CSSProperties, ReactNode } from 'react';
 import { AbsoluteFill, Easing, Img, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from 'remotion';
 import { C, MONO, SANS } from './theme';
 
-/** 0 → 1 com mola a partir de `delay` quadros. */
 export function useEnter(delay = 0, damping = 18) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   return spring({ frame: frame - delay, fps, config: { damping, mass: 0.7 } });
 }
 
-/** Interpola de forma suave entre quadros. */
 export function ease(frame: number, input: [number, number], output: [number, number]) {
   return interpolate(frame, input, output, { extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: Easing.bezier(0.2, 0.7, 0.2, 1) });
 }
@@ -123,7 +121,6 @@ export function Logo({ size = 96, spin = true }: { size?: number; spin?: boolean
   );
 }
 
-/** Janela de navegador com uma captura real dentro. */
 export function BrowserFrame({
   x,
   y,
@@ -185,7 +182,6 @@ export function Shot({ src, width, style }: { src: string; width: number; style?
   return <Img src={staticFile(`shots/${src}`)} style={{ position: 'absolute', left: 0, top: 0, width, ...style }} />;
 }
 
-/** Ponteiro do mouse com "clique" (escala) no quadro `clickAt`. */
 export function Cursor({ x, y, clickAt }: { x: number; y: number; clickAt?: number }) {
   const frame = useCurrentFrame();
   const press = clickAt === undefined ? 0 : interpolate(frame, [clickAt - 3, clickAt, clickAt + 6], [0, 1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
@@ -213,7 +209,6 @@ export function Cursor({ x, y, clickAt }: { x: number; y: number; clickAt?: numb
   );
 }
 
-/** Moldura de destaque que aponta para uma região de uma captura. */
 export function Highlight({
   x,
   y,

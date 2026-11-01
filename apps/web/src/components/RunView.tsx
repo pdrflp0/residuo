@@ -27,7 +27,6 @@ export function RunView({ id, motion }: { id: string; motion: boolean }) {
     userPicked.current = false;
   }, [id]);
 
-  // Ao terminar a reprodução, seleciona a etapa mais relevante (sem roubar uma escolha do usuário).
   useEffect(() => {
     if (!data || userPicked.current) return;
     const v = data.run.verdict;

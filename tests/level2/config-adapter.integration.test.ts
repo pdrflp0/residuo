@@ -1,6 +1,3 @@
-/**
- * Nível 2: o adapter genérico (residuo.json) contra sistemas reais.
- */
 import { AdapterError, type Mode, type StepObservation } from '@residuo/contracts';
 import { ConfigHttpAdapter, exploreOrders, ReferenceHttpAdapter, SCENARIOS } from '@residuo/engine';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -105,7 +102,6 @@ describe('exploração de ordens de entrega', () => {
     expect(r.explored).toHaveLength(60);
     expect(r.violations).toEqual([]);
     expect(r.inconclusive).toEqual([]);
-    // antes da exclusão, só a primeira edição entregue é aceita; as outras partiram da mesma revisão e ficaram velhas
     const beforeDelete = r.explored.find((x) => x.order.join('>') === 'release-1>release-2>release-3>delete>replay-1')!;
     expect(beforeDelete.steps.filter((s) => s.kind === 'release').map((s) => s.facts.writeOutcome)).toEqual(['updated', 'rejected', 'rejected']);
   });

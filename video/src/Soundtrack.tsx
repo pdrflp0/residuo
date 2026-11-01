@@ -13,12 +13,8 @@ interface Segment {
 const MUSIC_ALONE = 0.72;
 const MUSIC_UNDER_VOICE = 0.38;
 const MUSIC_DUCKED = 0.13;
-const RAMP = 0.3; // segundos
+const RAMP = 0.3;
 
-/**
- * Trilha original + narração opcional. A música abaixa durante as falas.
- * `video` escolhe a trilha e o roteiro: o de apresentação (intro) ou o do nível 3 (l3).
- */
 export function Soundtrack({ voice, video = 'intro' }: { voice: Voice; video?: 'intro' | 'l3' }) {
   const { fps } = useVideoConfig();
   const key = video === 'l3' ? `l3-${voice}` : voice;

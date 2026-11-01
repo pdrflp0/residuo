@@ -1,9 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
 
-/**
- * Ponta a ponta com serviços reais em portas e bancos próprios (residuo_*_e2e),
- * para não misturar com o ambiente de desenvolvimento.
- */
 const DB = 'postgres://residuo:residuo-local-only@localhost:54329';
 
 export default defineConfig({
@@ -19,7 +15,6 @@ export default defineConfig({
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } }],
   webServer: [
     {
-      // substitui a API da Anthropic no teste do resumo com IA
       command: 'npx tsx tests/support/anthropic-stub.ts',
       url: 'http://127.0.0.1:4199/health',
       env: { STUB_PORT: '4199' },

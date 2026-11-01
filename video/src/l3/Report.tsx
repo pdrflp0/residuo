@@ -8,12 +8,10 @@ export const REPORT_FRAMES = 270;
 
 const W = 1260;
 const H = 700;
-// zoom na coluna de conteúdo do relatório (1200 px CSS dos 1440 capturados)
 const IMG_W = (W * geometry.report.w) / 1200;
 const S = IMG_W / geometry.report.w;
 const LEFT = -((geometry.report.w - 1200) / 2) * S;
 
-/** O relatório HTML exportado, aberto como arquivo. Captura real; zero requisições externas medidas na captura. */
 export function Report() {
   const frame = useCurrentFrame();
   const scroll = ease(frame, [80, 200], [0, 450 * S]);

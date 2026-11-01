@@ -1,11 +1,3 @@
-/**
- * Captura telas REAIS do Resíduo para o vídeo. Precisa do ambiente de desenvolvimento no ar
- * (npm run db:up && npm run dev, na raiz). Cria execuções de verdade pela API, percorre a
- * linha do tempo etapa por etapa e salva imagens em 2x + as posições dos elementos (para
- * as anotações do vídeo apontarem para o lugar certo).
- *
- *   npm run capture
- */
 import { mkdir, writeFile } from 'node:fs/promises';
 import { chromium } from '@playwright/test';
 
@@ -41,14 +33,12 @@ const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 2, reducedMotion: 'reduce' });
 const geometry = { runId: vuln.id, guardedId: guard.id };
 
-/** caixa de um elemento relativa a outra (em px CSS) */
 async function boxIn(container, inner) {
   const c = await container.boundingBox();
   const b = await inner.boundingBox();
   return { x: b.x - c.x, y: b.y - c.y, w: b.width, h: b.height, cw: c.width, ch: c.height };
 }
 
-// ---------- página inicial ----------
 await page.goto(`${BASE}/`);
 await page.getByText('Execuções recentes').waitFor();
 await page.waitForTimeout(300);
@@ -59,7 +49,6 @@ geometry.homeDemoButton = await (async () => {
   return { x: b.x, y: b.y, w: b.width, h: b.height, cw: 1440, ch: 1000 };
 })();
 
-// ---------- execução vulnerable, etapa por etapa ----------
 await page.setViewportSize({ width: 1440, height: 1700 });
 await page.goto(`${BASE}/#/runs/${vuln.id}`);
 const verdict = page.getByRole('region', { name: 'Veredito da execução' });
@@ -79,7 +68,6 @@ async function clipBetween(top, bottom) {
   return { x: a.x - 2, y: a.y - 2, width: Math.max(a.width, b.width) + 4, height: b.y + b.height - a.y + 4 };
 }
 
-// A altura da linha do tempo muda conforme as etapas aparecem; a geometria é gravada por etapa.
 geometry.steps = {};
 for (let k = 1; k <= 9; k++) {
   await page.locator('.playbar .counter').getByText(`${k}/9`).waitFor();
@@ -103,7 +91,6 @@ for (let k = 1; k <= 9; k++) {
 await page.mouse.move(0, 0);
 await verdict.screenshot({ path: `${OUT}verdict-vulnerable.png` });
 
-// evidência da etapa 9 (leitura) e 8 (causa)
 const ev = (n) => page.getByRole('region', { name: `Evidência da etapa ${n}` });
 await page.getByRole('button', { name: /^Etapa 9:/ }).click();
 await ev(9).waitFor();
@@ -120,7 +107,6 @@ await page.mouse.move(0, 0);
 await ev(8).screenshot({ path: `${OUT}evidence-8.png` });
 geometry.evidence8 = { response: await boxIn(ev(8), ev(8).locator('.code-block').nth(1)) };
 
-// ---------- comparação ----------
 await page.goto(`${BASE}/#/compare/${vuln.id}/${guard.id}`);
 await page.getByText('O resultado mudou').waitFor();
 await page.waitForTimeout(200);

@@ -9,10 +9,9 @@ export const COMPARE_FRAMES = 330;
 const W = 1500;
 const X = (1920 - W) / 2;
 const HEAD_H = Math.round((278 / 2544) * W);
-const EV_CROP = 300; // px CSS do topo da evidência lado a lado
+const EV_CROP = 300;
 const EV_S = W / 1272;
 
-/** Mesmo cenário no modo protegido: o resultado muda, com a mesma evidência lado a lado. */
 export function Compare() {
   const frame = useCurrentFrame();
   const head = useEnter(14);

@@ -45,7 +45,7 @@ npm run render       # gera out/residuo-intro.mp4
 - **Trilha:** composta por código (`scripts/music.mjs`), sintetizada do zero. Não usa samples nem música de terceiros, então não tem problema de copyright. `npm run music` gera `public/audio/music.wav`.
 - **Narração:** o roteiro e o tempo de cada fala estão em `scripts/narration.mjs`. A música abaixa sozinha durante as falas.
   - Voz do macOS: `npm run narration:say` e depois `npm run render:narrado`.
-  - ElevenLabs: copie `.env.local.example` para `.env.local`, preencha a chave e o ID da voz, e rode `npm run narration:elevenlabs` e depois `npm run render:elevenlabs`. O script avisa se algum trecho ficar longo demais para a cena.
+  - ElevenLabs: copie `.env.local.example` para `.env.local` (fica fora do git) e preencha a chave (elevenlabs.io → Profile → API Keys) e o ID da voz (a usada nos vídeos é a Eric, `cjVigY5qzO86Huf0OWal`), e rode `npm run narration:elevenlabs` e depois `npm run render:elevenlabs`. O script avisa se algum trecho ficar longo demais para a cena.
 
 O Remotion baixa o próprio Chrome headless na primeira renderização. Para reaproveitar o do Playwright, passe `--browser-executable=<caminho do chrome-headless-shell>`.
 

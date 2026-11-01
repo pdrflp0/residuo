@@ -1,9 +1,3 @@
-/**
- * Adapter HTTP para o serviço de referência (apps/reference-service).
- *
- * Responsabilidade única: traduzir as respostas do alvo em fatos (StepFacts).
- * Ele não decide se houve violação — isso é trabalho do avaliador.
- */
 import {
   AdapterError,
   type AdapterDescriptor,
@@ -150,7 +144,6 @@ export class ReferenceHttpAdapter implements TargetAdapter {
     );
     const body = this.expect(ex, [200, 403, 409], 'restaurar registro');
     const item = body.item as ItemBody | undefined;
-    // A autorização registrada vem da resposta do alvo, não do que o engine enviou.
     const recorded = body.authorization as { actor?: unknown; reason?: unknown } | undefined;
     const authorization =
       typeof recorded?.actor === 'string' && typeof recorded.reason === 'string' ? { actor: recorded.actor, reason: recorded.reason } : undefined;
@@ -190,7 +183,6 @@ export class ReferenceHttpAdapter implements TargetAdapter {
     const ex = await this.call('GET', path, undefined, opts);
     const body = this.expect(ex, [200, 404], 'ler registro');
     if (ex.response!.status === 404) {
-      // Só "registro não encontrado" conta como ausência. Namespace sumido ou rota errada é falha, não evidência.
       if (body.outcome !== 'NOT_FOUND') throw new AdapterError('failed', `ler registro: 404 sem "NOT_FOUND" (${String(body.outcome ?? 'sem outcome')})`, ex);
       return result(ex, { entityId: id, visible: false });
     }
@@ -244,7 +236,6 @@ export class ReferenceHttpAdapter implements TargetAdapter {
     try {
       parsed = text ? JSON.parse(text) : null;
     } catch {
-      /* corpo não-JSON fica como texto */
     }
     return {
       request,

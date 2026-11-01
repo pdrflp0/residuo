@@ -1,6 +1,3 @@
-/**
- * API real (Nest + Postgres lab) contra o serviço de referência real (Nest + Postgres target).
- */
 import type { AddressInfo } from 'node:net';
 import type { AiSummary, ReportV1, Run, RunComparison, RunDetail } from '@residuo/contracts';
 import { createReferenceApp } from '@residuo/reference-service';
@@ -39,12 +36,10 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<{ 
   try {
     parsed = JSON.parse(text);
   } catch {
-    /* markdown */
   }
   return { status: res.status, body: parsed as T, text, headers: res.headers };
 }
 
-/** Espera por estado observável da API (não por tempo fixo). */
 async function until(id: string, done: (d: RunDetail) => boolean): Promise<RunDetail> {
   for (let i = 0; i < 200; i++) {
     const { body } = await call<RunDetail>('GET', `/runs/${id}`);
@@ -150,16 +145,11 @@ describe('API de execuções', () => {
     const reset = await call<{ namespace: string }>('DELETE', `/runs/${created.body.id}/target-data`);
     expect(reset.status).toBe(200);
     expect(reset.body.namespace).toBe(created.body.namespace);
-    // a evidência gravada no laboratório continua disponível
     const d = await call<RunDetail>('GET', `/runs/${created.body.id}`);
     expect(d.body.steps).toHaveLength(9);
   });
 });
 
-/**
- * Modelo simulado: responde no formato da API de mensagens, montando o resumo a partir do relatório
- * recebido (cita a leitura da violação e a causa). Conta as chamadas para testar cache e deduplicação.
- */
 function fakeClaude(override?: Partial<Record<string, unknown>>) {
   const state = { calls: 0, lastBody: undefined as any };
   const fetch = (async (_url: string | URL, init?: RequestInit) => {
@@ -198,16 +188,14 @@ describe('resumo com IA (opcional)', () => {
     await app.listen(0, '127.0.0.1');
     const other = `http://127.0.0.1:${(app.getHttpServer().address() as AddressInfo).port}/api`;
     try {
-      // a execução vem da API principal (com alvo); a segunda instância só lê o mesmo laboratório
       const created = await call<Run>('POST', '/runs', { scenarioId: 'held-update-after-delete', mode: 'vulnerable' });
       const before = await until(created.body.id, finished);
 
       const [a, b] = await Promise.all([1, 2].map(() => fetch(`${other}/runs/${created.body.id}/summary`, { method: 'POST' }).then(async (r) => ({ status: r.status, body: (await r.json()) as AiSummary }))));
       expect([a!.status, b!.status]).toEqual([200, 200]);
-      expect(claude.state.calls).toBe(1); // pedidos simultâneos compartilham uma chamada
+      expect(claude.state.calls).toBe(1);
       expect(a!.body).toMatchObject({ runId: created.body.id, verdict: 'VIOLATION', findings: [{ steps: [8, 9] }] });
 
-      // já salvo: não chama de novo; refresh=1 chama
       await fetch(`${other}/runs/${created.body.id}/summary`, { method: 'POST' });
       expect(claude.state.calls).toBe(1);
       await fetch(`${other}/runs/${created.body.id}/summary?refresh=1`, { method: 'POST' });

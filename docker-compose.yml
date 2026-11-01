@@ -1,4 +1,3 @@
-# Ambiente local do Resíduo. Apenas dados sintéticos de demonstração.
 services:
   postgres:
     image: postgres:18-alpine
@@ -38,7 +37,6 @@ services:
       WEB_DIST: /app/apps/web/dist
       API_PORT: "4000"
       HOST: 0.0.0.0
-      # opcional: liga o resumo com IA (vazio = desligado)
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       RESIDUO_AI_MODEL: ${RESIDUO_AI_MODEL:-}
     depends_on:

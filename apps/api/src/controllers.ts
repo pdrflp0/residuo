@@ -36,7 +36,6 @@ export class MetaController {
       const res = await fetch(`${this.referenceUrl}/about`, { signal: AbortSignal.timeout(1500) });
       reference = { reachable: res.ok, ...(res.ok ? ((await res.json()) as object) : {}) };
     } catch {
-      /* alvo fora do ar: a interface mostra o aviso */
     }
     return { engineVersion: ENGINE_VERSION, adapter: this.adapter.describe(), reference, ai: this.ai.status() };
   }
@@ -78,14 +77,12 @@ export class RunsController {
     return this.executor.advance(runId(id));
   }
 
-  /** Reexecuta exatamente a mesma configuração (cenário, versão, semente, modo, política, falha). */
   @Post(':id/replay')
   @HttpCode(202)
   replay(@Param('id') id: string) {
     return this.executor.replay(runId(id));
   }
 
-  /** Mesma configuração com o outro modo do alvo — base da comparação vulnerable × guarded. */
   @Post(':id/counterpart')
   @HttpCode(202)
   counterpart(@Param('id') id: string, @Body() body: unknown) {
@@ -109,7 +106,6 @@ export class RunsController {
     return renderMarkdown(report);
   }
 
-  /** Relatório HTML de arquivo único, sem recursos externos: para anexar numa issue ou PR. */
   @Get(':id/report.html')
   async reportHtml(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
     const report = buildReport(await this.executor.detail(runId(id)));
@@ -126,17 +122,12 @@ export class RunsController {
     return regressionTest(report);
   }
 
-  /**
-   * Resumo opcional escrito por IA, citando as etapas. Envia o relatório sanitizado à API da Anthropic.
-   * Não altera o veredito. Já existindo, devolve o salvo (refresh=1 gera de novo).
-   */
   @Post(':id/summary')
   @HttpCode(200)
   summary(@Param('id') id: string, @Query('refresh') refresh?: string) {
     return this.ai.generate(runId(id), refresh === '1');
   }
 
-  /** Reset restrito ao namespace desta execução no serviço de referência. */
   @Delete(':id/target-data')
   resetTarget(@Param('id') id: string) {
     return this.executor.resetTarget(runId(id));

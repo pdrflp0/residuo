@@ -16,7 +16,6 @@ const PHASES = [
   { at: 285, title: 'E o registro volta junto.', body: `A leitura vê g1 de novo. O alvo informa quem escreveu por último: a restauração (etapa ${s['restore-snapshot']}).`, color: C.reappeared },
 ];
 
-/** Caminho 1: backup restaurado traz de volta o que foi apagado depois dele. Captura real. */
 export function Backup() {
   return (
     <Paper>

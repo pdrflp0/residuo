@@ -1,34 +1,15 @@
-/**
- * Vocabulário compartilhado entre engine, API, serviço de referência e interface.
- *
- * Termos centrais:
- * - id: identidade estável do registro ("item-17"). Sobrevive a exclusões.
- * - geração (generation): uma "vida" daquele id. Criar depois de excluir abre a geração seguinte.
- *   Por isso "item-17 g1 voltou" (ressurreição) é diferente de "item-17 g2 foi criado" (nova vida).
- * - revisão (revision): contador de versões dentro de uma geração. Uma atualização declara a
- *   revisão-base a partir da qual foi preparada.
- */
 import { z } from 'zod';
 import type { AiSummary } from './ai-summary';
 
-/** Modos do serviço de referência. */
 export const MODES = ['vulnerable', 'guarded'] as const;
 export const Mode = z.enum(MODES);
 export type Mode = z.infer<typeof Mode>;
-/** `external`: alvo de terceiros via residuo.json; o comportamento é o do próprio sistema testado. */
 export type TargetMode = Mode | 'external';
 
-/**
- * Política declarada pela aplicação testada.
- * - delete-wins: exclusão confirmada é definitiva para aquela geração; uma nova geração explícita é permitida.
- * - explicit-restore: a geração excluída pode voltar somente por uma restauração autorizada e registrada.
- * "Abrir conflito para revisão humana" fica para o nível 2 (ver docs/roadmap.md).
- */
 export const POLICIES = ['delete-wins', 'explicit-restore'] as const;
 export const Policy = z.enum(POLICIES);
 export type Policy = z.infer<typeof Policy>;
 
-/** Falhas que o serviço de referência pode simular para provar que o engine não "aprova" o que não observou. */
 export const FAULTS = ['none', 'confirm-unavailable', 'confirm-pending', 'inspect-hang'] as const;
 export const Fault = z.enum(FAULTS);
 export type Fault = z.infer<typeof Fault>;
@@ -54,7 +35,6 @@ export const STEP_KINDS = [
   'inspect',
 ] as const;
 
-/** Ponto de leitura vigiado. "primary" é a fonte de verdade; os demais são dados derivados. */
 export const OBSERVATION_POINTS = ['primary', 'cache', 'search'] as const;
 export type ObservationPoint = string;
 export type StepKind = (typeof STEP_KINDS)[number];
@@ -62,7 +42,6 @@ export type StepKind = (typeof STEP_KINDS)[number];
 export const VERDICTS = ['VIOLATION', 'NO_VIOLATION_OBSERVED', 'INCONCLUSIVE', 'POLICY_ALLOWED'] as const;
 export type VerdictResult = (typeof VERDICTS)[number];
 
-/** ok = o alvo respondeu algo interpretável (inclusive 404/409 esperados). */
 export type StepStatus = 'ok' | 'failed' | 'timeout' | 'unsupported' | 'skipped';
 
 export interface HttpExchange {
@@ -71,14 +50,8 @@ export interface HttpExchange {
   durationMs: number;
 }
 
-/**
- * Fatos extraídos pelo adapter a partir da resposta do alvo.
- * Campos de escrita registram o que o alvo DISSE ter feito; campos de leitura registram o que foi VISTO.
- * O avaliador só considera reaparecimento a partir de leituras (visible/observedGeneration).
- */
 export interface StepFacts {
   entityId?: string;
-  // escrita
   writeOutcome?: string;
   wrote?: boolean;
   generation?: number;
@@ -89,20 +62,15 @@ export interface StepFacts {
   restoreId?: string;
   authorization?: { actor: string; reason: string };
   opRef?: string;
-  // confirmação da política
   confirmed?: boolean;
   confirmationStatus?: string;
   mechanism?: string;
-  // leitura
   visible?: boolean;
   observedGeneration?: number;
   observedRevision?: number;
   lastWrittenBy?: string;
-  /** ponto de leitura usado (ausente = primary) */
   observationPoint?: string;
-  // backup
   snapshotId?: string;
-  /** quantas exclusões o alvo reaplicou depois de restaurar um backup */
   reappliedDeletions?: number;
 }
 
@@ -125,11 +93,8 @@ export interface Violation {
   entityId: string;
   generation: number;
   observedAtSeq: number;
-  /** Etapa de escrita associada ao reaparecimento, quando há evidência. */
   causedBySeq?: number;
-  /** stale-derived: nenhuma escrita explica; o dado sobreviveu num ponto derivado (cache, índice) não invalidado */
   attribution: 'provenance' | 'ordering' | 'stale-derived' | 'unknown';
-  /** ponto de leitura em que o reaparecimento foi visto */
   observationPoint?: string;
   explanation: string;
   evidenceSeqs: number[];
@@ -210,7 +175,6 @@ export interface AdapterDescriptor {
   name: string;
   version: string;
   capabilities: AdapterCapability[];
-  /** nomes dos pontos de leitura suportados (ex.: primary, cache, search) */
   points: string[];
   observationPoints: string[];
   limits: string[];
@@ -254,7 +218,6 @@ export interface RunDetail {
   run: Run;
   scenario: ScenarioSummary;
   steps: StepObservation[];
-  /** resumo opcional escrito por IA; não participa do veredito */
   aiSummary?: AiSummary;
 }
 
@@ -285,6 +248,5 @@ export interface ReportV1 {
   verdict?: Verdict;
   limits: string[];
   reproduce: { api: { method: 'POST'; path: '/api/runs'; body: Record<string, unknown> }; cli: string };
-  /** presente só se alguém gerou o resumo com IA para esta execução */
   aiSummary?: AiSummary;
 }

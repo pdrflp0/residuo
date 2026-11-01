@@ -14,7 +14,6 @@ import { Report, REPORT_FRAMES } from './Report';
 
 const T = 15;
 const SCENES = [L3_HOOK_FRAMES, BACKUP_FRAMES, DERIVED_FRAMES, FIX_FRAMES, REPORT_FRAMES, EXPLORE_FRAMES, AI_FRAMES, L3_OUTRO_FRAMES];
-/** 2295 quadros = 76,5 s. Os tempos da narração (scripts/narration.mjs, SCRIPT_L3) seguem estas cenas. */
 export const L3_TOTAL_FRAMES = SCENES.reduce((a, b) => a + b, 0) - T * (SCENES.length - 1);
 
 const timing = linearTiming({ durationInFrames: T });

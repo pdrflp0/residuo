@@ -1,19 +1,7 @@
-/**
- * Resumo de execução com IA (opcional, nível 3).
- *
- * A IA explica; ela não decide. O fluxo é:
- *   1. o relatório (já sanitizado) vai para o modelo como DADO, entre tags, com `<` escapado —
- *      as respostas HTTP do alvo vêm de terceiros e podem conter texto tentando dar instruções;
- *   2. o modelo devolve uma saída estruturada (veredito copiado, achados e sugestões com etapas citadas);
- *   3. `checkSummary` confere por código: veredito igual ao do avaliador, toda afirmação com citação,
- *      toda citação apontando para uma etapa que existe e, se houve violação, a etapa em que ela foi lida citada.
- * Se a conferência falhar, o resumo é descartado e o motivo é informado. Nada disso altera o veredito.
- */
 import Anthropic from '@anthropic-ai/sdk';
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 import { type AiSummary, type AiSummaryItem, AiSummaryOutput, type ReportV1 } from '@residuo/contracts';
 
-/** O mais barato da família 5.5: o resumo é curto (~3 mil tokens de entrada, poucas centenas de saída). */
 export const DEFAULT_AI_MODEL = 'claude-haiku-5-5';
 const DEFAULT_BASE_URL = 'https://api.anthropic.com';
 const BODY_LIMIT = 2000;
@@ -36,7 +24,6 @@ const clip = (v: unknown) => {
   return s.length <= BODY_LIMIT ? v : `${s.slice(0, BODY_LIMIT)}… [cortado: ${s.length} caracteres]`;
 };
 
-/** O que vai para o modelo: o relatório sem carimbos de tempo, com corpos HTTP limitados. */
 export function summaryInput(report: ReportV1) {
   const { run, scenario, verdict } = report;
   return {
@@ -63,12 +50,10 @@ export function summaryInput(report: ReportV1) {
 }
 
 export function summaryPrompt(report: ReportV1): string {
-  // `<` escapado: um "</relatorio>" dentro de uma resposta do alvo não fecha a tag
   const data = JSON.stringify(summaryInput(report), null, 1).replace(/</g, '\\u003c');
   return `<relatorio>\n${data}\n</relatorio>\n\nResuma esta execução seguindo as regras.`;
 }
 
-/** Problemas que impedem aceitar o resumo. Lista vazia = aceito. */
 export function checkSummary(out: AiSummaryOutput, report: ReportV1): string[] {
   const problems: string[] = [];
   const verdict = report.verdict;
@@ -108,7 +93,6 @@ export class AiSummaryRejected extends Error {
   }
 }
 
-/** Falha ao falar com a API do modelo (chave, cota, rede). Não carrega a chave nem o corpo enviado. */
 export class AiServiceError extends Error {
   constructor(readonly status: number | undefined) {
     super(
@@ -122,7 +106,6 @@ export class AiServiceError extends Error {
 export interface SummaryOptions {
   apiKey: string;
   model?: string;
-  /** Só muda por configuração explícita; variáveis de ambiente do SDK não redirecionam as evidências. */
   baseURL?: string;
   timeoutMs?: number;
   fetch?: typeof fetch;
@@ -147,7 +130,6 @@ export async function summarizeReport(report: ReportV1, opts: SummaryOptions): P
       output_config: { format: zodOutputFormat(AiSummaryOutput) },
     });
   } catch (err) {
-    // erro de HTTP (chave, cota, rede) vira AiServiceError; saída fora do schema vira "descartado"
     if (err instanceof Anthropic.APIError) throw new AiServiceError(err.status);
     if (err instanceof Anthropic.AnthropicError) throw new AiSummaryRejected(['a resposta não veio no formato esperado']);
     throw err;

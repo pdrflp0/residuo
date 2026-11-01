@@ -1,8 +1,3 @@
-/**
- * A semente gera somente os dados sintéticos (id do registro e conteúdo das edições).
- * A ordem das etapas vem do cenário e das barreiras, não da semente nem do relógio.
- */
-/** Semente padrão da demonstração: gera o registro `item-17` do exemplo de referência. */
 export const DEFAULT_SEED = 1200;
 
 export function mulberry32(seed: number): () => number {

@@ -1,6 +1,3 @@
-/**
- * A CLI como processo real (é assim que ela roda no CI de quem integra).
- */
 import { execFile } from 'node:child_process';
 import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';

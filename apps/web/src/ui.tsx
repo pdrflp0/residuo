@@ -91,7 +91,6 @@ export function VerdictChip({ result }: { result?: VerdictResult }) {
   );
 }
 
-/** Rótulo curto exibido no nó da linha do tempo: código HTTP + resultado. */
 export function stepCode(o: StepObservation): string {
   if (o.status === 'skipped') return 'não executada';
   if (o.status === 'timeout') return 'timeout';

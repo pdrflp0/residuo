@@ -16,7 +16,6 @@ const PHASES = [
   { at: 240, title: 'Dado derivado não invalidado.', body: 'O Resíduo vigia cada ponto de leitura e diz onde o dado sobreviveu. Nenhuma escrita explica: falta invalidar.' },
 ];
 
-/** Caminho 2: o banco apagou, o cache e a busca não. Captura real. */
 export function Derived() {
   return (
     <Paper>
